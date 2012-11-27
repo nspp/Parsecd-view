@@ -1,0 +1,9 @@
+This project is an eclipse project, using the Scala plug in.
+
+However, it is to be compile by hand as far as the version of Scala used
+in this project and in the eclipse plug in aren't the same !
+
+A file 'local.properties' is to be created in the root of this project with
+the following line :
+
+scala.home='/path/to/scala/library/jars/of/version/11'
