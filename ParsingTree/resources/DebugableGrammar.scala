@@ -11,9 +11,9 @@ object DebugableGrammar extends DebugableTest {
 
   def main(args: Array[String]) {
     //val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    //val tokens = new lexical.Scanner("Blip Blop Blap Blap Blap")
-    val tokens = new lexical.Scanner("succ succ succ of succ zero")
-    //val tokens = new lexical.Scanner("succ succ succ zero")
+    val tokens = new lexical.Scanner("Blip Blop Blap Blap Blap")
+//    val tokens = new lexical.Scanner("succ succ succ of succ zero")
+//    val tokens = new lexical.Scanner("succ succ succ zero")
     val mainParser = phrase(Term)
     mainParser(tokens) match {
       case Success(trees, _) =>
@@ -29,10 +29,10 @@ object DebugableGrammar extends DebugableTest {
   }
 }
 
-trait DebugableTest extends StandardTokenParsers with Controllers {
+trait DebugableTest extends StandardTokenParsers with Controllers with debugging.DebugableParsers {
 
   def runMain(c : Controller) : Unit = {
-    registerController(c)
+    //registerController(c)
     DebugableGrammar.main(Array(""))
   }
 
@@ -78,5 +78,4 @@ trait DebugableTest extends StandardTokenParsers with Controllers {
     | "of" ~> SimpleChurchNumTerm ^^ { case t => Succ(Succ(Succ(t))) }
     | "succ" ~ SimpleChurchNumTerm ^^ { case "succ" ~ t => Succ(t) }
   ) 
-  
 }

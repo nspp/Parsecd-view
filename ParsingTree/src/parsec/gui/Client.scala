@@ -16,18 +16,23 @@ import java.awt.event.ActionEvent
 import java.awt.BorderLayout
 import scala.tools.nsc
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.io.{PlainDirectory, Directory, PlainFile}
+import scala.reflect.io.{PlainDirectory, Directory, PlainFile}
 import java.io._
 import scala.util.parsing.combinator.debugging.DebugableParsers
 import java.awt.event.ActionListener
 import javax.swing.ListModel
 import javax.swing.tree.TreeCellRenderer
+import scala.swing.MainFrame
+import scala.swing.Component
+import scala.util.parsing.combinator.debugging.Controllers
 
 class StepController extends JButton with ParsingTreeBuilderController {
   def install(state: Boolean) = setEnabled(state)
+  
+  override def getText() = "Step"
 }
 
-class RuleUpdater(list: DefaultListModel[String]) extends RuleBuilderController {
+class RuleUpdater(list: DefaultListModel) extends RuleBuilderController {
   var i = 0
   var l: List[GrammarUpdater] = Nil
   def discover(r: GrammarRule) = {
@@ -45,7 +50,7 @@ class RuleUpdater(list: DefaultListModel[String]) extends RuleBuilderController 
   }
 }
 
-class GrammarUpdater(index: Int, list: DefaultListModel[String], r: GrammarRule) extends GrammarListener {
+class GrammarUpdater(index: Int, list: DefaultListModel, r: GrammarRule) extends GrammarListener {
   def uninstall = {
     r.removeListener(this)
   }
@@ -54,18 +59,19 @@ class GrammarUpdater(index: Int, list: DefaultListModel[String], r: GrammarRule)
   }
 }
 
-object Client extends SimpleSwingApplication {
+object Client extends SimpleSwingApplication with Controllers {
   val noRootParse = new Rule("No parsing yet")
   var content: JComponent = new JPanel(new BorderLayout)
   var parseTreeControl = new StepController
   var parseTree: ParsingTreeBuilder = new ParsingTreeBuilder(parseTreeControl)
-  var rules = new DefaultListModel[String]
+  var rules = new DefaultListModel
   var ruleControl = new RuleUpdater(rules)
   var ruleTree = new RuleBuilder(ruleControl)
   def top = {
+	java.lang.System.setProperty("parsec.debug", "true")
     var parsing = new JTree
     parsing.setModel(new DefaultTreeModel(noRootParse))
-    var ruleList = new JList[String]
+    var ruleList = new JList
     ruleList.setModel(rules)
     var toolbar = new JToolBar()
     parseTreeControl.setAction(new Action() {
@@ -84,16 +90,23 @@ object Client extends SimpleSwingApplication {
         parseTree.step()
       }
     })
+    
+    parseTreeControl.setEnabled(false)
+    
     // TODO button compile
     var compileButton = new JButton
+    compileButton.setText("Compile")
     compileButton.addActionListener(new ActionListener {
       def actionPerformed(e: ActionEvent) {
         compileButton.setEnabled(false);
-        parseTree.clear
-        ruleTree.clear
+        parseTreeControl.setEnabled(false);
+//        parseTree.clear
+//        ruleTree.clear
         Client.initClient(Compiler.getMainDebuggable)
         parsing.setModel(new DefaultTreeModel(parseTree.head))
-        rules.clear()
+//        rules.clear()
+        parseTreeControl.setEnabled(true);
+        compileButton.setEnabled(true);
       }
     })
     
@@ -103,12 +116,14 @@ object Client extends SimpleSwingApplication {
     var rootSplit = new JSplitPane
     rootSplit.setLeftComponent(parsing)
     rootSplit.setRightComponent(ruleList)
+    rootSplit.setDividerLocation(200)
     content.add(rootSplit)
     content.add(toolbar, BorderLayout.NORTH)
     
     new MainFrame() {
       title = "Combinator Parsing"
       contents = Component.wrap(content)
+      size = new java.awt.Dimension(400,200)
     }
   }
   
@@ -131,6 +146,7 @@ object Client extends SimpleSwingApplication {
     val op              = new Thread() {
       override def run() {
         try {
+          val controller = new Controller
           methHandler.invoke(parser, controller)
         }
         catch { case e => e.getCause().printStackTrace(); }
@@ -197,13 +213,17 @@ object Compiler {
         val classes = (for (c <- classStrings if c.last == '$') yield Class.forName(c)).filter(hasRun(_))
         return classes ++ directories.flatMap(findClass0)
       }
-      else throw new Exception(dir + " is not a directory")
+      else {
+        println(dir + " is not a directory")
+        throw new Exception(dir + " is not a directory")
+      }
     }
 
     def hasRun(c : Class[_]) : Boolean = {
       (c.getDeclaredMethods.filter(m => m.getName == "runMain").length == 1)
     }
 
+    println("searching class with a runMain method")
     val cs = findClass0(new File("build"))
     println(cs)
     cs match {
@@ -218,6 +238,8 @@ object Compiler {
     val x = props.getProperty("scala.home")
 
     val files = compile // Echoed out to save a bit of time
+    
+    // TODO Handle the case were the compilation threw errors !!!!
 
     println("Compile was successful")
 

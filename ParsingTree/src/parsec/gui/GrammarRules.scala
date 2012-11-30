@@ -25,7 +25,7 @@ abstract trait GrammarObject {
 case class GrammarRule(name: String) extends GrammarObject {
   private var listeners: List[GrammarListener] = Nil
 
-  def update = listeners.map(_.update)
+  override def update = listeners.map(_.update)
 
   def addListener(listener: GrammarListener) {
     listeners = listener::listeners

@@ -1,17 +1,26 @@
 package parsec.gui
 
-import scala.util.parsing.combinator.debugging.ParserKind
-import scala.util.parsing.combinator.debugging.WordParser
-import scala.util.parsing.combinator.debugging.OrParser
-import scala.util.parsing.combinator.debugging.AndParser
-import scala.util.parsing.combinator.debugging.OtherParser
-import scala.util.parsing.combinator.debugging.Listener
-import scala.util.parsing.combinator.debugging.ParserLocation
-import scala.util.parsing.combinator.debugging.AndOrZipper
-import scala.util.parsing.combinator.debugging.Notification
-import scala.util.parsing.combinator.debugging.OtherParser
+import scala.util.parsing.combinator.debugging._
 import java.util.ArrayList
 import javax.swing.JButton
+
+object Converter {
+    def toParserKind(s: String, loc : ParserLocation): ParserKind = {
+    def ignore : Boolean = s match {
+      case s if(s.indexOf("Parser") >= 0)         => true
+      case s if(s.indexOf("parser-map-") >= 0)    => true
+      case s if(s != "" && s.head == '`')         => true
+      case otherwise                              => false
+    }
+    s match {
+      case "|" | "|||"                  => OrParser(s, loc)
+      case "~" | "~>" | "<~" | "~!"     => AndParser(s, loc)
+      case "phrase"                     => OtherParser(s, loc)
+      case other if ignore              => IgnoredParser(other, loc)
+      case normal                       => WordParser(normal, loc)
+    }
+  }
+}
 
 trait ParsingTreeBuilderController {
   def install (state: Boolean);
@@ -33,31 +42,49 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
   def step() = {
     control install false
     notif match {
-      case Some(n) => n.setReady
+      case Some(n) => {
+        println("setting the notification ready for parsing tree building")
+        n.setReady
+      }
       case None => ()
     }
   }
   
   def stepIn(id: Int, name: String, loc: ParserLocation, tree: AndOrZipper): Option[Notification] = {
+    println("stepping in")
     notif = None
-    var kind: ParserKind = null
+    var kind: ParserKind = Converter.toParserKind(name, loc)
     stack = (kind match {
       case WordParser(w,_) => {
+          println(w)
     	  notif = Some(new Notification)
     	  control install true
     	  (stack.head append(new Token(w)))
       	}
-      case OrParser(_,_) => (stack.head match{
+      case OrParser(w,_) => {
+          println(w)
+        (stack.head match{
         case Alternative() => stack.head
         case _ => stack.head append new Alternative
       })
-      case AndParser(_,_) => (stack.head match{
+      }
+      case AndParser(w,_) => {
+          println(w)
+        (stack.head match{
         case Sequence() => stack.head
         case _ => stack.head append new Sequence
       })
-      case OtherParser(n,_) => if (stack!=Nil) stack.head append (new Rule(n)) else {
+      }
+      case OtherParser(n,_) => {
+        println(n)
+        if (stack!=Nil) stack.head append (new Rule(n)) else {
         head = new Rule(n)
         head
+      }
+      }
+      case _ => {
+        println("found "+kind)
+        stack.head
       }
     })::stack
     notif
@@ -89,7 +116,7 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
   }
   
   def stepIn(id: Int, name: String, loc: ParserLocation, tree: AndOrZipper): Option[Notification] = {
-    var kind: ParserKind = null
+    var kind: ParserKind = Converter.toParserKind(name, loc)
     
     def ruleUpdate(focused: List[GrammarObject], current: GrammarObject, elem: GrammarObject) = focused match {
       case Nil => {
@@ -127,6 +154,7 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
         case _ => ruleUpdate(stack.head.elems.drop(focus.head).toList, stack.head, new GrammarSequence)
       }
       case WordParser(n,_) => ruleUpdate(stack.head.elems.drop(focus.head).toList, stack.head, new Word(n))
+      case _ => println("ohoh")
     }
     None
   }
