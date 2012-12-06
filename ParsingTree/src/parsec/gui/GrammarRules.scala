@@ -13,8 +13,8 @@ abstract trait GrammarObject {
   var elems: Queue[GrammarObject] = Queue.empty
   var parent: GrammarObject = null
   
-  def append(rule: GrammarObject) {
-    elems:+rule
+  def append(rule: GrammarObject) = {
+    elems=elems:+rule
     rule.parent = this
   }
   
@@ -41,10 +41,20 @@ case class Word(name: String) extends GrammarObject {
   // override append to throw an exception ?
 }
 
+object Generator {
+	var uid = 0;
+	def id = {
+		uid = uid+1
+		uid
+	}
+}
+
 case class GrammarAlternative extends GrammarObject {
-  override def toString = elems.mkString("\n | ")
+  var uid = Generator.id
+  override def toString = "Alt"+uid+": "+elems.mkString("\n | ")
 }
 
 case class GrammarSequence extends GrammarObject {
-  override def toString = elems.mkString(" ")
+  var uid = Generator.id
+  override def toString = "Seq"+uid+": "+elems.mkString(" ")
 }

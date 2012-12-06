@@ -28,13 +28,15 @@ trait ParsingTreeBuilderController {
 
 class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener {
 
-  var head: ParsingNode = null
-  var stack: List[ParsingNode] = Nil;
+  var head: ParsingNode = new Rule("main")
+  var stack: List[ParsingNode] = head::Nil;
   var notif: Option[Notification] = None
+  var cur : ParserLocation = null
+  var fst = true
   
   def clear() = {
-    head = null
-    stack = Nil
+    head = new Rule("main")
+    stack = head::Nil
     notif = None
     control install true
   }
@@ -43,7 +45,6 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
     control install false
     notif match {
       case Some(n) => {
-        println("setting the notification ready for parsing tree building")
         n.setReady
       }
       case None => ()
@@ -51,42 +52,49 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
   }
   
   def stepIn(id: Int, name: String, loc: ParserLocation, tree: AndOrZipper): Option[Notification] = {
-    println("stepping in")
+    fst = true
+    def isInSameRule(loc1: ParserLocation, loc2: ParserLocation): Boolean = {
+      if (loc2==null||loc1==null) return loc1==loc2
+      return loc1.fileName == loc2.fileName && loc1.outerMethod == loc2.outerMethod &&
+    		  (loc1.outer == loc2.outer||isInSameRule(loc1.outer, loc2.outer))
+    }
     notif = None
     var kind: ParserKind = Converter.toParserKind(name, loc)
-    stack = (kind match {
+    kind match {
       case WordParser(w,_) => {
-          println(w)
     	  notif = Some(new Notification)
     	  control install true
-    	  (stack.head append(new Token(w)))
+    	  stack = (stack.head append(new Token(w)))::stack
       	}
       case OrParser(w,_) => {
-          println(w)
+        if (isInSameRule(loc, cur)) {
         (stack.head match{
-        case Alternative() => stack.head
-        case _ => stack.head append new Alternative
+        case a@Alternative() => stack = a::stack
+        case a@_ => stack= (a append new Alternative)::stack
       })
+        } else {
+          var r = new Rule(loc.outerMethod)
+          stack.head append r
+          cur = loc
+          stack = (r append new Alternative)::r::stack
+        }
       }
       case AndParser(w,_) => {
-          println(w)
+        if (isInSameRule(loc, cur)) {
         (stack.head match{
-        case Sequence() => stack.head
-        case _ => stack.head append new Sequence
+        case a@Sequence() => stack = a::stack
+        case a@_ => stack = (a append new Sequence)::stack
       })
+        }else {
+          var r = new Rule(loc.outerMethod)
+          stack.head append r
+          cur = loc
+          stack = (r append new Sequence)::r::stack
+        }
       }
-      case OtherParser(n,_) => {
-        println(n)
-        if (stack!=Nil) stack.head append (new Rule(n)) else {
-        head = new Rule(n)
-        head
-      }
-      }
-      case _ => {
-        println("found "+kind)
-        stack.head
-      }
-    })::stack
+      case OtherParser(w,_) => ()
+      case _ => stack = stack.head::stack
+    }
     notif
   }
   
@@ -95,7 +103,21 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
       stack.head.parse(ParsingStatus.SUCCESS, "")
     else
       stack.head.parse(ParsingStatus.FAILURE, "")
-    stack = stack.tail
+    def up() = {
+      stack.head match {
+		case Rule(n) => cur =cur.outer
+		case _ => ()
+	  }
+	  stack = stack.tail
+    }
+    up()
+    def consumeRule(): Unit = { 
+      stack match {
+		case (a@Rule(n))::t if (a!=head) => up(); consumeRule()
+		case _ => ()
+	  }
+    }
+    consumeRule()
     None
   }
 }
@@ -108,6 +130,7 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
   var rules: java.util.List[GrammarRule] = new ArrayList
   var stack: List[GrammarObject] = Nil
   var focus: List[Int] = 0::Nil
+  var cur: ParserLocation = null
   
   def clear = {
     rules = new ArrayList
@@ -116,58 +139,91 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
   }
   
   def stepIn(id: Int, name: String, loc: ParserLocation, tree: AndOrZipper): Option[Notification] = {
-    var kind: ParserKind = Converter.toParserKind(name, loc)
-    
-    def ruleUpdate(focused: List[GrammarObject], current: GrammarObject, elem: GrammarObject) = focused match {
-      case Nil => {
-        current append elem
-        stack = elem::stack
-        focus = 0::focus
-      }
-      case h::t if (h==elem) => {
-        stack = h::stack
-        focus = 0::focus
-      }
-      case _ => // TODO Send error
+	def updateRule(current: GrammarObject, foc: Int, elem: GrammarObject) = {
+	  current.elems.drop(foc).toList match {
+	    case Nil =>  {
+		  current append elem
+          stack = elem::stack
+		}
+		case h::t if (h==elem) => stack = h::stack
+        case _ => // TODO send error
+	  }
+  	  focus = 0::focus
+	}
+    def isInSameRule(loc1: ParserLocation, loc2: ParserLocation): Boolean = {
+      if (loc2==null||loc1==null) return loc1==loc2
+      return loc1.fileName == loc2.fileName && loc1.outerMethod == loc2.outerMethod &&
+    		  (loc1.outer == loc2.outer||isInSameRule(loc1.outer, loc2.outer))
     }
-    
-    kind match{
-      case OtherParser(n,_) => {
-        var rule = new GrammarRule(n)
-        if (rules.contains(rule))
-          rule = rules.get(rules.indexOf(rule))
-        else {
-          control discover(rule)
-          rules.add(rule)
-        }
-        stack match {
-          case t::h => ruleUpdate(stack.head.elems.drop(focus.head).toList, t, rule)
-          case Nil => ()// We are at the head, so nothing to do
-        }
+    if (isInSameRule(loc, cur)) {
+      var kind: ParserKind = Converter.toParserKind(name, loc)
+      kind match {
+        case WordParser(w,_) => updateRule(stack.head, focus.head, Word(w))
+        case OrParser(w,_) => stack.head match {
+			case a@GrammarAlternative() => stack = a::stack
+			case _ => updateRule(stack.head, focus.head, new GrammarAlternative())
+		  }
+        case AndParser(w,_) => stack.head match {
+			case a@GrammarSequence() => stack = a::stack
+			case _ => updateRule(stack.head, focus.head, new GrammarSequence())
+		  }
+//        case OtherParser(w,_) => ()
+        case _ => stack = stack.head::stack
       }
-      case OrParser(_,_) => stack.head match {
-        case GrammarAlternative() => ()
-        case _ => ruleUpdate(stack.head.elems.drop(focus.head).toList, stack.head, new GrammarAlternative)
+	} else {
+      cur = loc
+	  var idx = rules.indexOf(GrammarRule(loc.outerMethod))
+	  var r = GrammarRule(loc.outerMethod)
+	  if (idx == -1) {
+		rules.add(r)
+		control discover r
+      } else {
+        r = rules.get(idx)
       }
-      case AndParser(_,_) => stack.head match {
-        case GrammarSequence() => ()
-        case _ => ruleUpdate(stack.head.elems.drop(focus.head).toList, stack.head, new GrammarSequence)
-      }
-      case WordParser(n,_) => ruleUpdate(stack.head.elems.drop(focus.head).toList, stack.head, new Word(n))
-      case _ => println("ohoh")
-    }
+      stack match {
+		  case h::t => h append r
+		  case _ => ()
+	  }
+	  stack = r::stack
+      focus = 0::focus
+	  stepIn(id,name,loc,tree)
+	}
     None
   }
   
   def stepOut(id: Int, success: Boolean, last: Boolean): Option[Notification] = {
-    stack = stack.tail
-    focus = focus.tail
-    stack match {
-      case GrammarAlternative()::t if (!success) => focus = (focus.head +1)::focus.tail
-      case GrammarSequence()::t if (success) => focus = (focus.head +1)::focus.tail
-      case _ => ()
-    }    
+	//focus = focus.tail
+	//focus = (focus.head+1)::(focus.tail)
+    def up() = {
+      stack match {
+		case GrammarRule(_)::Nil => ()
+		case GrammarRule(_)::t => {
+		  cur = cur.outer
+          focus = focus.tail
+          focus = (focus.head+1)::(focus.tail)
+		}
+		case h1::h2::t if (h1==h2) => ()
+		case _ => {
+          focus = focus.tail
+          focus = (focus.head+1)::(focus.tail)
+		}
+	  }
+	  stack = stack.tail
+    }
+    up()
+    def consumeRule(): Unit = { 
+      stack match {
+		case (a@GrammarRule(n))::t => up(); consumeRule()
+		case _ => ()
+	  }
+    }
+    consumeRule()
+    println(rules)
+    println()
+    println(focus mkString ", ")
+    println()
+    println(stack mkString ", ")
+    println()
     None
   }
 }
-

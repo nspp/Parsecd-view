@@ -36,7 +36,7 @@ class RuleUpdater(list: DefaultListModel) extends RuleBuilderController {
   var i = 0
   var l: List[GrammarUpdater] = Nil
   def discover(r: GrammarRule) = {
-    list.set(i, r.toString + r.elems.mkString);
+    list.add(i, r.toString + r.elems.mkString);
     i = i+1
     var upd = new GrammarUpdater(i, list, r)
     r.addListener(upd)
@@ -67,7 +67,9 @@ object Client extends SimpleSwingApplication with Controllers {
   var rules = new DefaultListModel
   var ruleControl = new RuleUpdater(rules)
   var ruleTree = new RuleBuilder(ruleControl)
+  var debuggedParser: DebugableParsers = null
   def top = {
+	java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
 	java.lang.System.setProperty("parsec.debug", "true")
     var parsing = new JTree
     parsing.setModel(new DefaultTreeModel(noRootParse))
@@ -100,11 +102,11 @@ object Client extends SimpleSwingApplication with Controllers {
       def actionPerformed(e: ActionEvent) {
         compileButton.setEnabled(false);
         parseTreeControl.setEnabled(false);
-//        parseTree.clear
-//        ruleTree.clear
+        parseTree.clear
+        ruleTree.clear
         Client.initClient(Compiler.getMainDebuggable)
         parsing.setModel(new DefaultTreeModel(parseTree.head))
-//        rules.clear()
+        rules.clear()
         parseTreeControl.setEnabled(true);
         compileButton.setEnabled(true);
       }
@@ -128,6 +130,11 @@ object Client extends SimpleSwingApplication with Controllers {
   }
   
   def initClient(parser: DebugableParsers) = {
+	//if (debuggedParser!=null) {
+		//debuggedParser.removeListener(parseTree)
+		//debuggedParser.removeListener(ruleTree)
+	//}
+		
     parser.addListener(parseTree)
     parser.addListener(ruleTree)
 //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
