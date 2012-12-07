@@ -1,16 +1,18 @@
 package parsec.gui
 
-import javax.swing.tree.TreeNode
 import java.util.Collections
 import scala.collection.JavaConversions.SeqWrapper
+import javax.swing.tree.TreeNode
+import javax.swing.tree.DefaultTreeModel
 
 object ParsingStatus extends Enumeration {
   type ParsingStatus = Value
   val UNKNOWN, SUCCESS, FAILURE = Value
 }
+
 import ParsingStatus._
 
-sealed abstract class ParsingNode extends TreeNode {
+sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
 
   var status = UNKNOWN
   var parent: ParsingNode = null
@@ -23,6 +25,7 @@ sealed abstract class ParsingNode extends TreeNode {
   def append(elem: ParsingNode): ParsingNode = {
     child = elem::child
     elem.parent = this
+    model.nodesWereInserted(this, Array[Int](child.length-1))
     elem
   }
 
@@ -36,7 +39,7 @@ sealed abstract class ParsingNode extends TreeNode {
 
   def getAllowsChildren(): Boolean = { true }
   def isLeaf(): Boolean = { false }
-  def getChildAt(childIndex: Int): TreeNode = { child.dropRight(childIndex-1).last }
+  def getChildAt(childIndex: Int): TreeNode = { child.dropRight(childIndex).last }
 
   def getChildCount(): Int = { child.length }
   def children(): java.util.Enumeration[ParsingNode] = { 
@@ -47,25 +50,57 @@ sealed abstract class ParsingNode extends TreeNode {
 //  override def equals (other: Any): Boolean= other.isInstanceOf[ParsingNode] && parent == other.asInstanceOf[ParsingNode].parent && child == other.asInstanceOf[ParsingNode].child
 }
 
-case class Rule(name: String) extends ParsingNode {
+case class Rule(name: String, model: DefaultTreeModel) extends ParsingNode(model) {
   override def toString = {
     name//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
-case class Alternative extends ParsingNode {
+
+//~ object Alternative {
+	//~ var uid = 0;
+	//~ def id = {
+		//~ uid = uid+1
+		//~ uid
+	//~ }
+//~ }
+
+case class Alternative(model: DefaultTreeModel) extends ParsingNode(model) {
+  //~ var aid = Alternative.id
   override def toString = {
-    "Alt"//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
-  }
-}
-case class Sequence extends ParsingNode {
-  override def toString = {
-    "Seq"//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
+    "Alt"//+
+    //aid+
+    //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
 
-case class Token(word: String) extends ParsingNode {
+//~ object Sequence {
+	//~ var uid = 0;
+	//~ def id = {
+		//~ uid = uid+1
+		//~ uid
+	//~ }
+//~ }
+
+case class Sequence(model: DefaultTreeModel) extends ParsingNode(model) {
+  //var sid = Sequence.id
+  override def toString = {
+    "Seq"//+
+    //sid+
+    //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
+  }
+}
+
+//~ object Token {
+	//~ var uid = 0;
+	//~ def id = {
+		//~ uid = uid+1
+		//~ uid
+	//~ }
+//~ }
+
+case class Token(word: String, model: DefaultTreeModel) extends ParsingNode(model) {
   import java.util.Enumeration
-  
+  //~ var tid = Token.id
   var reason: String = null
   
   // TODO send exception actually
@@ -81,5 +116,6 @@ case class Token(word: String) extends ParsingNode {
   override def isLeaf(): Boolean = { true }
   override def getAllowsChildren(): Boolean = { false }
   
-  override def toString = word
+  override def toString = word//+
+  //(""*tid)
 }

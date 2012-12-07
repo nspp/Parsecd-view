@@ -3,6 +3,7 @@ package parsec.gui
 import scala.util.parsing.combinator.debugging._
 import java.util.ArrayList
 import javax.swing.JButton
+import javax.swing.tree.DefaultTreeModel
 
 object Converter {
     def toParserKind(s: String, loc : ParserLocation): ParserKind = {
@@ -26,16 +27,16 @@ trait ParsingTreeBuilderController {
   def install (state: Boolean);
 }
 
-class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener {
+class ParsingTreeBuilder(control: ParsingTreeBuilderController, model: DefaultTreeModel) extends Listener {
 
-  var head: ParsingNode = new Rule("main")
+  var head: ParsingNode = new Rule("main", model)
   var stack: List[ParsingNode] = head::Nil;
   var notif: Option[Notification] = None
   var cur : ParserLocation = null
   var fst = true
   
   def clear() = {
-    head = new Rule("main")
+    head = new Rule("main", model)
     stack = head::Nil
     notif = None
     control install true
@@ -64,32 +65,32 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
       case WordParser(w,_) => {
     	  notif = Some(new Notification)
     	  control install true
-    	  stack = (stack.head append(new Token(w)))::stack
+    	  stack = (stack.head append(new Token(w, model)))::stack
       	}
       case OrParser(w,_) => {
         if (isInSameRule(loc, cur)) {
         (stack.head match{
-        case a@Alternative() => stack = a::stack
-        case a@_ => stack= (a append new Alternative)::stack
+        case a@Alternative(_) => stack = a::stack
+        case a@_ => stack= (a append new Alternative(model))::stack
       })
         } else {
-          var r = new Rule(loc.outerMethod)
+          var r = new Rule(loc.outerMethod, model)
           stack.head append r
           cur = loc
-          stack = (r append new Alternative)::r::stack
+          stack = (r append new Alternative(model))::r::stack
         }
       }
       case AndParser(w,_) => {
         if (isInSameRule(loc, cur)) {
         (stack.head match{
-        case a@Sequence() => stack = a::stack
-        case a@_ => stack = (a append new Sequence)::stack
+        case a@Sequence(_) => stack = a::stack
+        case a@_ => stack = (a append new Sequence(model))::stack
       })
         }else {
-          var r = new Rule(loc.outerMethod)
+          var r = new Rule(loc.outerMethod, model)
           stack.head append r
           cur = loc
-          stack = (r append new Sequence)::r::stack
+          stack = (r append new Sequence(model))::r::stack
         }
       }
       case OtherParser(w,_) => ()
@@ -105,7 +106,7 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
       stack.head.parse(ParsingStatus.FAILURE, "")
     def up() = {
       stack.head match {
-		case Rule(n) => cur =cur.outer
+		case Rule(n, _) => cur =cur.outer
 		case _ => ()
 	  }
 	  stack = stack.tail
@@ -113,7 +114,7 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController) extends Listener
     up()
     def consumeRule(): Unit = { 
       stack match {
-		case (a@Rule(n))::t if (a!=head) => up(); consumeRule()
+		case (a@Rule(n, _))::t if (a!=head) => up(); consumeRule()
 		case _ => ()
 	  }
     }
@@ -192,23 +193,25 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
   }
   
   def stepOut(id: Int, success: Boolean, last: Boolean): Option[Notification] = {
-	//focus = focus.tail
-	//focus = (focus.head+1)::(focus.tail)
     def up() = {
       stack match {
+		case Nil => ()
 		case GrammarRule(_)::Nil => ()
+		case h1::h2::t if (h1==h2) => ()
 		case GrammarRule(_)::t => {
 		  cur = cur.outer
           focus = focus.tail
           focus = (focus.head+1)::(focus.tail)
 		}
-		case h1::h2::t if (h1==h2) => ()
 		case _ => {
           focus = focus.tail
           focus = (focus.head+1)::(focus.tail)
 		}
 	  }
-	  stack = stack.tail
+	  stack match {
+		case Nil => ()
+		case _::t => stack = t
+	  }
     }
     up()
     def consumeRule(): Unit = { 
@@ -218,12 +221,6 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
 	  }
     }
     consumeRule()
-    println(rules)
-    println()
-    println(focus mkString ", ")
-    println()
-    println(stack mkString ", ")
-    println()
     None
   }
 }

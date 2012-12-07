@@ -60,10 +60,11 @@ class GrammarUpdater(index: Int, list: DefaultListModel, r: GrammarRule) extends
 }
 
 object Client extends SimpleSwingApplication with Controllers {
-  val noRootParse = new Rule("No parsing yet")
+  val noRootParse = new Rule("No parsing yet", null)
+  var model = new DefaultTreeModel(noRootParse)
   var content: JComponent = new JPanel(new BorderLayout)
   var parseTreeControl = new StepController
-  var parseTree: ParsingTreeBuilder = new ParsingTreeBuilder(parseTreeControl)
+  var parseTree: ParsingTreeBuilder = new ParsingTreeBuilder(parseTreeControl, model)
   var rules = new DefaultListModel
   var ruleControl = new RuleUpdater(rules)
   var ruleTree = new RuleBuilder(ruleControl)
@@ -71,9 +72,8 @@ object Client extends SimpleSwingApplication with Controllers {
   def top = {
 	java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
 	java.lang.System.setProperty("parsec.debug", "true")
-    var parsing = new JTree
-    parsing.setModel(new DefaultTreeModel(noRootParse))
-    var ruleList = new JList
+    var parsing = new JTree(model)
+    var ruleList = new JList()
     ruleList.setModel(rules)
     var toolbar = new JToolBar()
     parseTreeControl.setAction(new Action() {
@@ -90,6 +90,7 @@ object Client extends SimpleSwingApplication with Controllers {
       def getValue(key: String) = null
       def actionPerformed(act: ActionEvent) = {
         parseTree.step()
+        model reload
       }
     })
     
@@ -105,7 +106,8 @@ object Client extends SimpleSwingApplication with Controllers {
         parseTree.clear
         ruleTree.clear
         Client.initClient(Compiler.getMainDebuggable)
-        parsing.setModel(new DefaultTreeModel(parseTree.head))
+        model setRoot(parseTree.head)
+        parsing.setModel(model)
         rules.clear()
         parseTreeControl.setEnabled(true);
         compileButton.setEnabled(true);
@@ -125,7 +127,7 @@ object Client extends SimpleSwingApplication with Controllers {
     new MainFrame() {
       title = "Combinator Parsing"
       contents = Component.wrap(content)
-      size = new java.awt.Dimension(400,200)
+      size = new java.awt.Dimension(800,400)
     }
   }
   
