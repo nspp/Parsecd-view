@@ -55,7 +55,7 @@ class GrammarUpdater(index: Int, list: DefaultListModel, r: GrammarRule) extends
     r.removeListener(this)
   }
   def update {
-    list.set(index, r.toString+r.elems.mkString)
+    list.set(index-1, r.toString+" -> "+ (r.elems.mkString).replaceAll("\n\t", "<br/>"))
   }
 }
 
@@ -90,7 +90,7 @@ object Client extends SimpleSwingApplication with Controllers {
       def getValue(key: String) = null
       def actionPerformed(act: ActionEvent) = {
         parseTree.step()
-        model reload
+//        model reload
       }
     })
     
@@ -120,14 +120,14 @@ object Client extends SimpleSwingApplication with Controllers {
     var rootSplit = new JSplitPane
     rootSplit.setLeftComponent(parsing)
     rootSplit.setRightComponent(ruleList)
-    rootSplit.setDividerLocation(200)
+    rootSplit.setDividerLocation(250)
     content.add(rootSplit)
     content.add(toolbar, BorderLayout.NORTH)
     
     new MainFrame() {
       title = "Combinator Parsing"
       contents = Component.wrap(content)
-      size = new java.awt.Dimension(800,400)
+      size = new java.awt.Dimension(500,600)
     }
   }
   

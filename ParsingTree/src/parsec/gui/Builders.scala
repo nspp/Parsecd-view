@@ -161,11 +161,11 @@ class RuleBuilder(control: RuleBuilderController) extends Listener {
       kind match {
         case WordParser(w,_) => updateRule(stack.head, focus.head, Word(w))
         case OrParser(w,_) => stack.head match {
-			case a@GrammarAlternative() => stack = a::stack
+			case a@GrammarAlternative() => stack = a::stack; a.length = a.length +1
 			case _ => updateRule(stack.head, focus.head, new GrammarAlternative())
 		  }
         case AndParser(w,_) => stack.head match {
-			case a@GrammarSequence() => stack = a::stack
+			case a@GrammarSequence() => stack = a::stack; a.length = a.length +1
 			case _ => updateRule(stack.head, focus.head, new GrammarSequence())
 		  }
 //        case OtherParser(w,_) => ()

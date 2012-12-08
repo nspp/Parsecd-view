@@ -12,8 +12,17 @@ object ParsingStatus extends Enumeration {
 
 import ParsingStatus._
 
+object ParsingNodeIdGenerator{
+  var uid = 0
+  def id = {
+    uid = uid +1
+    uid
+  }
+}
+
 sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
 
+  var uid = ParsingNodeIdGenerator.id
   var status = UNKNOWN
   var parent: ParsingNode = null
   var child:List[ParsingNode] = Nil;
@@ -33,74 +42,56 @@ sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
   
   def level: Int = if (parent==null) 0 else 1+parent.level
 
-  def getIndex(node: TreeNode): Int = { 
-    println("searching "+node+" in {"+(child mkString ", ")+"}")
-    if (child.contains(node)) {child.length-child.indexOf(node)} else {-1} }
+  def getIndex(node: TreeNode): Int = {
+    def find(acc: Int, list: List[ParsingNode], n: ParsingNode): Int = list match {
+      case Nil => -1
+      case h::t if n deepEqual h => acc
+      case _::t => find(acc-1,t,n)
+    }
+//    var res = if (child.contains(node)) {child.length-child.indexOf(node)-1} else {-1}
+    if (node.isInstanceOf[ParsingNode])
+      find(child.length -1, child, node.asInstanceOf[ParsingNode])
+    else
+      -1
+  }
 
   def getAllowsChildren(): Boolean = { true }
   def isLeaf(): Boolean = { false }
-  def getChildAt(childIndex: Int): TreeNode = { child.dropRight(childIndex).last }
+  def getChildAt(childIndex: Int): TreeNode = {
+    child.dropRight(childIndex).last
+  }
 
   def getChildCount(): Int = { child.length }
   def children(): java.util.Enumeration[ParsingNode] = { 
     java.util.Collections.enumeration(SeqWrapper(child.reverse))
   }
   
-  
+  def deepEqual(other: ParsingNode): Boolean = uid==other.uid
 //  override def equals (other: Any): Boolean= other.isInstanceOf[ParsingNode] && parent == other.asInstanceOf[ParsingNode].parent && child == other.asInstanceOf[ParsingNode].child
 }
 
 case class Rule(name: String, model: DefaultTreeModel) extends ParsingNode(model) {
   override def toString = {
-    name//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
+    name+uid//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
-
-//~ object Alternative {
-	//~ var uid = 0;
-	//~ def id = {
-		//~ uid = uid+1
-		//~ uid
-	//~ }
-//~ }
 
 case class Alternative(model: DefaultTreeModel) extends ParsingNode(model) {
-  //~ var aid = Alternative.id
   override def toString = {
-    "Alt"//+
-    //aid+
+    "Alt"+uid//+
     //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
-
-//~ object Sequence {
-	//~ var uid = 0;
-	//~ def id = {
-		//~ uid = uid+1
-		//~ uid
-	//~ }
-//~ }
 
 case class Sequence(model: DefaultTreeModel) extends ParsingNode(model) {
-  //var sid = Sequence.id
   override def toString = {
-    "Seq"//+
-    //sid+
+    "Seq"+uid//+
     //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
-
-//~ object Token {
-	//~ var uid = 0;
-	//~ def id = {
-		//~ uid = uid+1
-		//~ uid
-	//~ }
-//~ }
 
 case class Token(word: String, model: DefaultTreeModel) extends ParsingNode(model) {
   import java.util.Enumeration
-  //~ var tid = Token.id
   var reason: String = null
   
   // TODO send exception actually
@@ -116,6 +107,5 @@ case class Token(word: String, model: DefaultTreeModel) extends ParsingNode(mode
   override def isLeaf(): Boolean = { true }
   override def getAllowsChildren(): Boolean = { false }
   
-  override def toString = word//+
-  //(""*tid)
+  override def toString = word+uid
 }
