@@ -22,7 +22,7 @@ object ParsingNodeIdGenerator{
 
 sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
 
-  var uid = ParsingNodeIdGenerator.id
+//  var uid = ParsingNodeIdGenerator.id
   var status = UNKNOWN
   var parent: ParsingNode = null
   var child:List[ParsingNode] = Nil;
@@ -45,7 +45,7 @@ sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
   def getIndex(node: TreeNode): Int = {
     def find(acc: Int, list: List[ParsingNode], n: ParsingNode): Int = list match {
       case Nil => -1
-      case h::t if n deepEqual h => acc
+      case h::t if n == h => acc
       case _::t => find(acc-1,t,n)
     }
 //    var res = if (child.contains(node)) {child.length-child.indexOf(node)-1} else {-1}
@@ -66,31 +66,29 @@ sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
     java.util.Collections.enumeration(SeqWrapper(child.reverse))
   }
   
-  def deepEqual(other: ParsingNode): Boolean = uid==other.uid
-//  override def equals (other: Any): Boolean= other.isInstanceOf[ParsingNode] && parent == other.asInstanceOf[ParsingNode].parent && child == other.asInstanceOf[ParsingNode].child
 }
 
-case class Rule(name: String, model: DefaultTreeModel) extends ParsingNode(model) {
+case class Rule(uid: Int = ParsingNodeIdGenerator.id)(name: String, model: DefaultTreeModel) extends ParsingNode(model) {
   override def toString = {
     name+uid//+"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
 
-case class Alternative(model: DefaultTreeModel) extends ParsingNode(model) {
+case class Alternative(uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeModel) extends ParsingNode(model) {
   override def toString = {
     "Alt"+uid//+
     //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
 
-case class Sequence(model: DefaultTreeModel) extends ParsingNode(model) {
+case class Sequence(uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeModel) extends ParsingNode(model) {
   override def toString = {
     "Seq"+uid//+
     //"\n"+" "*level+"("+(child mkString ("\n"+" "*(level+1)))+")"
   }
 }
 
-case class Token(word: String, model: DefaultTreeModel) extends ParsingNode(model) {
+case class Token(word: String, uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeModel) extends ParsingNode(model) {
   import java.util.Enumeration
   var reason: String = null
   

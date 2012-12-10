@@ -29,14 +29,14 @@ trait ParsingTreeBuilderController {
 
 class ParsingTreeBuilder(control: ParsingTreeBuilderController, model: DefaultTreeModel) extends Listener {
 
-  var head: ParsingNode = new Rule("main", model)
+  var head: ParsingNode = new Rule()("main", model)
   var stack: List[ParsingNode] = head::Nil;
   var notif: Option[Notification] = None
   var cur : ParserLocation = null
   var fst = true
   
   def clear() = {
-    head = new Rule("main", model)
+    head = new Rule()("main", model)
     stack = head::Nil
     notif = None
     control install true
@@ -65,32 +65,32 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController, model: DefaultTr
       case WordParser(w,_) => {
     	  notif = Some(new Notification)
     	  control install true
-    	  stack = (stack.head append(new Token(w, model)))::stack
+    	  stack = (stack.head append(new Token(w)(model)))::stack
       	}
       case OrParser(w,_) => {
         if (isInSameRule(loc, cur)) {
         (stack.head match{
         case a@Alternative(_) => stack = a::stack
-        case a@_ => stack= (a append new Alternative(model))::stack
+        case a@_ => stack= (a append new Alternative()(model))::stack
       })
         } else {
-          var r = new Rule(loc.outerMethod, model)
+          var r = new Rule()(loc.outerMethod, model)
           stack.head append r
           cur = loc
-          stack = (r append new Alternative(model))::r::stack
+          stack = (r append new Alternative()(model))::r::stack
         }
       }
       case AndParser(w,_) => {
         if (isInSameRule(loc, cur)) {
         (stack.head match{
         case a@Sequence(_) => stack = a::stack
-        case a@_ => stack = (a append new Sequence(model))::stack
+        case a@_ => stack = (a append new Sequence()(model))::stack
       })
         }else {
-          var r = new Rule(loc.outerMethod, model)
+          var r = new Rule()(loc.outerMethod, model)
           stack.head append r
           cur = loc
-          stack = (r append new Sequence(model))::r::stack
+          stack = (r append new Sequence()(model))::r::stack
         }
       }
       case OtherParser(w,_) => ()
@@ -106,7 +106,7 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController, model: DefaultTr
       stack.head.parse(ParsingStatus.FAILURE, "")
     def up() = {
       stack.head match {
-		case Rule(n, _) => cur =cur.outer
+		case Rule(_) => cur =cur.outer
 		case _ => ()
 	  }
 	  stack = stack.tail
@@ -114,7 +114,7 @@ class ParsingTreeBuilder(control: ParsingTreeBuilderController, model: DefaultTr
     up()
     def consumeRule(): Unit = { 
       stack match {
-		case (a@Rule(n, _))::t if (a!=head) => up(); consumeRule()
+		case (a@Rule(_))::t if (a!=head) => up(); consumeRule()
 		case _ => ()
 	  }
     }

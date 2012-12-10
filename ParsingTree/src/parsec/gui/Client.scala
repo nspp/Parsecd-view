@@ -25,6 +25,7 @@ import javax.swing.tree.TreeCellRenderer
 import scala.swing.MainFrame
 import scala.swing.Component
 import scala.util.parsing.combinator.debugging.Controllers
+import javax.swing.JScrollPane
 
 class StepController extends JButton with ParsingTreeBuilderController {
   def install(state: Boolean) = setEnabled(state)
@@ -60,7 +61,7 @@ class GrammarUpdater(index: Int, list: DefaultListModel, r: GrammarRule) extends
 }
 
 object Client extends SimpleSwingApplication with Controllers {
-  val noRootParse = new Rule("No parsing yet", null)
+  val noRootParse = new Rule()("No parsing yet", null)
   var model = new DefaultTreeModel(noRootParse)
   var content: JComponent = new JPanel(new BorderLayout)
   var parseTreeControl = new StepController
@@ -118,8 +119,8 @@ object Client extends SimpleSwingApplication with Controllers {
     toolbar.add(compileButton)
     toolbar.add(parseTreeControl)
     var rootSplit = new JSplitPane
-    rootSplit.setLeftComponent(parsing)
-    rootSplit.setRightComponent(ruleList)
+    rootSplit.setLeftComponent(new JScrollPane(parsing))
+    rootSplit.setRightComponent(new JScrollPane(ruleList))
     rootSplit.setDividerLocation(250)
     content.add(rootSplit)
     content.add(toolbar, BorderLayout.NORTH)
@@ -127,7 +128,7 @@ object Client extends SimpleSwingApplication with Controllers {
     new MainFrame() {
       title = "Combinator Parsing"
       contents = Component.wrap(content)
-      size = new java.awt.Dimension(500,600)
+      size = new java.awt.Dimension(750,600)
     }
   }
   
