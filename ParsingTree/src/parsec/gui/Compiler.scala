@@ -28,7 +28,7 @@ object Compiler {
     def doCompile(filesToCompile : List[String], dest : String) {
       println("WILL COMPILE: " + filesToCompile.mkString(", "))
       var dir = new File(dest)
-      if (dir.exists()) dir.renameTo(new File("old"))
+      if (dir.exists()) dir.delete()
       val (comp, settings) = createCompiler(dest)
       val command = new nsc.CompilerCommand(filesToCompile, settings)
       val run = new comp.Run
