@@ -14,132 +14,98 @@ import javax.swing.Action
 import java.beans.PropertyChangeListener
 import java.awt.event.ActionEvent
 import java.awt.BorderLayout
-import scala.tools.nsc
-import scala.tools.nsc.reporters.ConsoleReporter
-import scala.reflect.io.{PlainDirectory, Directory, PlainFile}
-import java.io._
-import scala.util.parsing.combinator.debugging.DebugableParsers
+import scala.util.parsing.combinator.debugging._
 import java.awt.event.ActionListener
 import javax.swing.ListModel
 import javax.swing.tree.TreeCellRenderer
 import scala.swing.MainFrame
 import scala.swing.Component
-import scala.util.parsing.combinator.debugging.Controllers
 import javax.swing.JScrollPane
-
-class StepController extends JButton with ParsingTreeBuilderController {
-  def install(state: Boolean) = setEnabled(state)
-  
-  override def getText() = "Step"
-}
-
-class RuleUpdater(list: DefaultListModel) extends RuleBuilderController {
-  var i = 0
-  var l: List[GrammarUpdater] = Nil
-  def discover(r: GrammarRule) = {
-    list.add(i, r.toString + r.elems.mkString);
-    i = i+1
-    var upd = new GrammarUpdater(i, list, r)
-    r.addListener(upd)
-    l = upd::l
-  }
-  
-  def clear = {
-    l.map(_ uninstall)
-    i = 0
-    l = Nil
-  }
-}
-
-class GrammarUpdater(index: Int, list: DefaultListModel, r: GrammarRule) extends GrammarListener {
-  def uninstall = {
-    r.removeListener(this)
-  }
-  def update {
-    list.set(index-1, r.toString+" -> "+ (r.elems.mkString).replaceAll("\n\t", "<br/>"))
-  }
-}
+import scala.swing.MenuBar
+import javax.swing.JMenuBar
+import javax.swing.JMenu
+import javax.swing.JMenuItem
+import java.awt.Dialog
+import scala.swing.FileChooser
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import scala.swing.Menu
 
 object Client extends SimpleSwingApplication with Controllers {
-  val noRootParse = new Rule()("No parsing yet", null)
-  var model = new DefaultTreeModel(noRootParse)
-  var content: JComponent = new JPanel(new BorderLayout)
-  var parseTreeControl = new StepController
-  var parseTree: ParsingTreeBuilder = new ParsingTreeBuilder(parseTreeControl, model)
-  var rules = new DefaultListModel
-  var ruleControl = new RuleUpdater(rules)
-  var ruleTree = new RuleBuilder(ruleControl)
+  var resourcePath = "resources"
+  var debugViews: List[DebugView] = Nil
   var debuggedParser: DebugableParsers = null
   def top = {
-	java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
-	java.lang.System.setProperty("parsec.debug", "true")
-    var parsing = new JTree(model)
-    var ruleList = new JList()
-    ruleList.setModel(rules)
+    var content: JComponent = new JPanel(new BorderLayout)
+    java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
+    java.lang.System.setProperty("parsec.debug", "true")
     var toolbar = new JToolBar()
-    parseTreeControl.setAction(new Action() {
-      var enable: Boolean = true
-      def removePropertyChangeListener(x: PropertyChangeListener) {
-        
-      }
-      def addPropertyChangeListener(x: PropertyChangeListener) {
-        
-      }
-      def isEnabled() = enable
-      def setEnabled(b: Boolean) = {enable = b}
-      def putValue(key: String, value: Any) = {}
-      def getValue(key: String) = null
-      def actionPerformed(act: ActionEvent) = {
-        parseTree.step()
-//        model reload
-      }
-    })
     
-    parseTreeControl.setEnabled(false)
+    var controller = new SwingButtonMetaControl
+    toolbar.add(controller)
     
-    // TODO button compile
     var compileButton = new JButton
     compileButton.setText("Compile")
     compileButton.addActionListener(new ActionListener {
       def actionPerformed(e: ActionEvent) {
         compileButton.setEnabled(false);
-        parseTreeControl.setEnabled(false);
-        parseTree.clear
-        ruleTree.clear
-        Client.initClient(Compiler.getMainDebuggable)
-        model setRoot(parseTree.head)
-        parsing.setModel(model)
-        rules.clear()
-        parseTreeControl.setEnabled(true);
+        
+        debugViews map(_.clear)
+        Client.initClient(Compiler.getMainDebuggable(resourcePath))
+
         compileButton.setEnabled(true);
+        debugViews map(_.revalidate())
       }
     })
-    
-    
+
     toolbar.add(compileButton)
-    toolbar.add(parseTreeControl)
+    var steByStep = new StepByStepControllerView
+    toolbar.add(steByStep)
+    debugViews = steByStep::debugViews
     var rootSplit = new JSplitPane
-    rootSplit.setLeftComponent(new JScrollPane(parsing))
-    rootSplit.setRightComponent(new JScrollPane(ruleList))
     rootSplit.setDividerLocation(250)
     content.add(rootSplit)
+    
+    var parseTreeView = new ParsingTreeView
+    var ruleDisplay = new RuleDiscovererView
+    debugViews = ruleDisplay::parseTreeView::debugViews
+    
+    rootSplit.setLeftComponent(parseTreeView)
+    rootSplit.setRightComponent(ruleDisplay)
     content.add(toolbar, BorderLayout.NORTH)
     
-    new MainFrame() {
+    debugViews map(v => controller.addControl(v.control))
+    
+    var menusBar = new MenuBar
+    var menu = new JMenu("File")
+    menusBar.contents.append(Component.wrap(menu))
+    var menuItem = new JMenuItem("Choose grammar location")
+    menu.add(menuItem)
+    menuItem.addActionListener(new ActionListener {
+      def actionPerformed(e: ActionEvent) {
+        var pathChooser = new JFileChooser(resourcePath)
+        pathChooser.setDialogTitle("Selection of the grammar location directory")
+        pathChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+        pathChooser.setMultiSelectionEnabled(false)
+        
+        var ret = pathChooser.showOpenDialog(null)
+        if (ret==JFileChooser.APPROVE_OPTION)
+          resourcePath = pathChooser.getSelectedFile().getAbsolutePath()
+        println(resourcePath)
+      }
+    })
+    new MainFrame (){
       title = "Combinator Parsing"
       contents = Component.wrap(content)
       size = new java.awt.Dimension(750,600)
+      menuBar = menusBar
     }
   }
   
   def initClient(parser: DebugableParsers) = {
-	//if (debuggedParser!=null) {
-		//debuggedParser.removeListener(parseTree)
-		//debuggedParser.removeListener(ruleTree)
-	//}
-		
-    parser.addListener(parseTree)
-    parser.addListener(ruleTree)
+    // TODO Unsubscribe every listener from the ancient parser
+    debugViews map(v => parser.addListener(v.builder))
+    
 //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
 //    val op              = new Thread() {
 //      override def run() {
@@ -151,9 +117,8 @@ object Client extends SimpleSwingApplication with Controllers {
 //    }
 //    op.start()
     
-    
-    val methHandler = parser.getClass().getMethod("runMain", classOf[Controller]) // runTest would be defined in Parsers and would add Controller argument to the list of listeners
-    val op              = new Thread() {
+    val methHandler = parser.getClass().getMethod("runMain", classOf[Controller])
+    val op = new Thread() {
       override def run() {
         try {
           val controller = new Controller
@@ -163,104 +128,5 @@ object Client extends SimpleSwingApplication with Controllers {
       } 
     }
     op.start()
-  }
-}
-
-object Compiler {
-  
-  def compile : List[String] = {
-
-    def createCompiler(out: String): (nsc.Global, nsc.Settings) = {
-      val settings = new nsc.Settings()
-      val props = new java.util.Properties()
-      props.load(new java.io.FileInputStream("local.properties"))
-      val classPath = props.getProperty("scala.home") + "/lib/scala-library.jar"
-      settings.classpath.value = classPath //System.getProperty("java.class.path")
-      val jFile = new java.io.File(out)
-      val directory = new Directory(jFile)
-      val compDirectory = new PlainDirectory(directory)
-      settings.outputDirs.setSingleOutput(compDirectory)
-
-      val global = new nsc.Global(settings, new ConsoleReporter(settings))
-      (global, settings)
-    }
-
-    def doCompile(filesToCompile : List[String], dest : String) {
-      println("WILL COMPILE: " + filesToCompile.mkString(", "))
-      val (comp, settings) = createCompiler(dest)
-      val command = new nsc.CompilerCommand(filesToCompile, settings)
-      val run = new comp.Run
-      run compile command.files
-    }
-
-    // Get file handle of original file or directory
-    val dir = "resources"
-    val build = "build"
-    val orig = new File(dir)
-    var error : Option[String] = None
-    var files : List[File] = Nil
-    var fnames : List[String] = Nil
-    var fpaths : List[String] = Nil
-
-    // In case it's a directory, let the file array contain all the files of the directory
-    if (orig.isDirectory) {
-      files     = orig.listFiles.filter(f => """.*\.scala$""".r.findFirstIn(f.getName).isDefined).toList
-      fnames    = files.map(f => f.getName)
-      fpaths    = fnames.map(f => dir + "/" + f)
-    }
-
-    // Then compile the files
-    doCompile(fpaths, build)
-    return fnames
-  }
-  
-  def findClass : Class[_] = {
-    def findClass0(dir : File) : List[Class[_]] = {
-      if (dir.isDirectory) {
-        val classPointers = dir.listFiles.filter(f => """.*\.class$""".r.findFirstIn(f.getName).isDefined).toList
-        val directories = dir.listFiles.filter(f => f.isDirectory).toList
-        val classStrings = classPointers.map(c => c.getPath.split('.').head.split('/').drop(1).mkString("."))
-        val classes = (for (c <- classStrings if c.last == '$') yield Class.forName(c)).filter(hasRun(_))
-        return classes ++ directories.flatMap(findClass0)
-      }
-      else {
-        println(dir + " is not a directory")
-        throw new Exception(dir + " is not a directory")
-      }
-    }
-
-    def hasRun(c : Class[_]) : Boolean = {
-      (c.getDeclaredMethods.filter(m => m.getName == "runMain").length == 1)
-    }
-
-    println("searching class with a runMain method")
-    val cs = findClass0(new File("build"))
-    println(cs)
-    cs match {
-      case head::_   => head
-      case _            => throw new Exception("No runDebug class in uploaded files")
-    }
-  }
-
-  def getMainDebuggable(): DebugableParsers = {
-    val props = new java.util.Properties()
-    props.load(new java.io.FileInputStream("local.properties"))
-    val x = props.getProperty("scala.home")
-
-    val files = compile // Echoed out to save a bit of time
-    
-    // TODO Handle the case were the compilation threw errors !!!!
-
-    println("Compile was successful")
-
-    // Now find the class containing the main function
-    val classToRun = findClass
-
-    println("Class name: " + classToRun.getName)
-
-    // Invoke the class we found, calling run with a newly created controller
-    val f           = classToRun.getField("MODULE$")
-    f.setAccessible(true)
-    f.get(null).asInstanceOf[DebugableParsers]
   }
 }
