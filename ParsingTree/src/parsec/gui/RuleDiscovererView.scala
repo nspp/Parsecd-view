@@ -42,7 +42,9 @@ class RuleDiscovererView extends JPanel(new BorderLayout) with RuleBuilderListen
   def clear = {
     treeRoot.removeAllChildren()
     rules = Nil
+    treeModel = new DefaultTreeModel(treeRoot)
     tree.setModel(treeModel)
+    builder.clear
     build
   }
   

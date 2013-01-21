@@ -62,12 +62,15 @@ object Compiler {
   }
   
   def findClass : Class[_] = {
+    var i = 0;
     def findClass0(dir : File) : List[Class[_]] = {
       if (dir.isDirectory) {
         val classPointers = dir.listFiles.filter(f => """.*\.class$""".r.findFirstIn(f.getName).isDefined).toList
         val directories = dir.listFiles.filter(f => f.isDirectory).toList
         val classStrings = classPointers.map(c => c.getPath.split('.').head.split('/').drop(1).mkString("."))
-        val classes = (for (c <- classStrings if c.last == '$') yield Class.forName(c)).filter(hasRun(_))
+        println((classStrings.filter(_.last=='$').mkString("\n")))
+        var cl1 = (for (c <- classStrings if c.last == '$') yield Class.forName(c))
+        val classes = cl1.filter(hasRun(_))
         return classes ++ directories.flatMap(findClass0)
       }
       else {

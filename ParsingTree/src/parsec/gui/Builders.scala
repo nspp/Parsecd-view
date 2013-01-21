@@ -24,11 +24,19 @@ object Utils {
   def isInSameRule(loc1: ParserLocation, loc2: ParserLocation): Boolean = {
     if (loc2==null||loc1==null) return loc1==loc2
     return loc1.fileName == loc2.fileName && loc1.outerMethod == loc2.outerMethod &&
-             (loc1.outer == loc2.outer||isInSameRule(loc1.outer, loc2.outer))
+             (loc1.outer==loc2.outer||(loc1.outer.fileName==loc2.outer.fileName&&loc1.outer.outerMethod==loc2.outer.outerMethod))
+  }
+  def isInSameRuleDeep(inner: ParserLocation, outer: ParserLocation): Boolean = {
+    def inside(inner: ParserLocation, outer: ParserLocation): Boolean = if (inner==null) return true
+      else if (outer==null) return false
+      else isInSameRuleDeep(inner,outer)||inside(inner,outer.outer)
+    if (inner==null||outer==null) return inner==outer
+    return inner.fileName == outer.fileName && inner.outerMethod == outer.outerMethod &&
+             inside(inner.outer, outer.outer)
   }
   def print(loc: ParserLocation): String = loc match {
-    case null => ""
-    case _ => loc.fileName+":"+loc.outerMethod+"["+print(loc.outer)+"]"
+    case null => "End"
+    case _ => loc.outerMethod+"["+print(loc.outer)+"]"
   }
 }
 
@@ -85,6 +93,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
           stack = (stack.head append r)::stack
           listeners map(_ adding(r, stack.head))
           cur = loc
+          stepIn(id,name,loc)
         }
       }
       case AndParser(w,_) => {
@@ -99,15 +108,13 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
       })
         }else {
           var r = new Rule()(loc.outerMethod, model)
-          stack.head append r
+          stack = (stack.head append r)::stack
           listeners map(_ adding(r, stack.head))
           cur = loc
-          var n = new Sequence()(model)
-          stack = (r append n)::stack
-          listeners map(_ adding(n, stack.tail.head))
+          stepIn(id,name,loc)
         }
       }
-      case OtherParser(w,_) => println("OTHER!!!")
+      case OtherParser(w,_) => ()
       case _ => stack = stack.head::stack
     }
     control.notification = notif
@@ -125,11 +132,11 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         listeners map(_ parsed(stack.head, success, msg))
     }
     def consume: Unit = stack match {
-      case (h:Rule)::h2::t if h!=h2 => cur = cur.outer
+      case (h:Rule)::h2::t if h!=h2 => cur = cur.outer; stack = stack.tail
       case _ => ()
     }
-    consume
     stack = stack.tail
+    consume
     None
   }
 }
@@ -142,16 +149,19 @@ trait RuleBuilderListener {
 class RuleBuilder extends Listener {
   var rules: java.util.List[GrammarRule] = new ArrayList
   private[this] var stack: List[GrammarObject] = Nil
-  private[this] var focus: List[Int] = 0::Nil
+  private[this] var focus: List[Int] = Nil
   private[this] var cur: ParserLocation = null
   private[this] var listeners: List[RuleBuilderListener] = Nil
+  private[this] var lengths: List[Int] = Nil
   
   def addListener(rbl: RuleBuilderListener) = listeners = rbl::listeners
   
   def clear = {
+    rules.clear
     rules = new ArrayList
     stack = Nil
-    focus = 0::Nil
+    focus = Nil
+    lengths = Nil
     cur = null
     listeners = Nil
   }
@@ -165,45 +175,73 @@ class RuleBuilder extends Listener {
           stack = elem::stack
         }
         case h::t if (h==elem) => stack = h::stack
-        case _ => // TODO send error
+        case h::t => println("AOUCH!!!!!!!!!!!!!!!!!!!!!!!!! "+elem+" instead of "+h+" in "+current+" at " + foc+"\n\n"+Utils.print(cur)+"\n\n"+Utils.print(loc)); stack = elem::stack
       }
       focus = 0::focus
+      elem match{
+        case e:GrammarAlternative => lengths = 2::lengths;
+        case e:GrammarSequence => lengths = 2::lengths;
+        case _ => lengths = 1::lengths
+      }
     }
-    if (Utils.isInSameRule(loc, cur)) {
+    if (Utils.isInSameRuleDeep(loc, cur)) {
       Utils.toParserKind(name, loc) match {
         case WordParser(w,_) => updateRule(stack.head, focus.head, Word(w))
         case OrParser(w,_) => stack.head match {
-          case a@GrammarAlternative() => stack = a::stack; a.length = a.length +1
-          case r@GrammarRule(_) => stack = r::stack; r.length = r.length +1
+          case a@GrammarAlternative() => {
+            stack = a::stack
+            lengths = (lengths.head+1)::lengths.tail
+            if (lengths.head>a.length) a.length = a.length +1
+          }
+          case r@GrammarRule(_) => {
+            stack = r::stack
+            lengths = (lengths.head+1)::lengths.tail
+            if (lengths.head>r.length) r.length = r.length +1
+          }
           case _ => updateRule(stack.head, focus.head, new GrammarAlternative())
         }
         case AndParser(w,_) => stack.head match {
-          case a@GrammarSequence() => stack = a::stack; a.length = a.length +1
+          case a@GrammarSequence() => {
+            stack = a::stack
+            lengths = (lengths.head+1)::lengths.tail
+            if (lengths.head>a.length) a.length = a.length +1
+          }
           case _ => updateRule(stack.head, focus.head, new GrammarSequence())
         }
-        case _ => stack = stack.head::stack
+        case _ => stack = stack.head::stack;
       }
+
       None
     } else {
-      cur = loc
-      var idx = rules.indexOf(GrammarRule(loc.outerMethod))
-      var r = GrammarRule(loc.outerMethod)
-      if (idx == -1) {
-        rules.add(r)
-        listeners.map(_ discover r)
-      } else {
-        r = rules.get(idx)
-      }
-      stack match {
-        case h::t => {
-          h append r
-          listeners map (_.discover(h, r))
+      Utils.toParserKind(name, loc) match {
+        case WordParser(_,_) | OrParser(_,_) | AndParser(_,_) => {
+          var idx = rules.indexOf(GrammarRule(loc.outerMethod))
+          var r = GrammarRule(loc.outerMethod)
+          if (idx == -1) {
+            rules.add(r)
+            listeners.map(_ discover r)
+          } else {
+            r = rules.get(idx)
+          }
+          stack match {
+            case h::t => updateRule(h, focus.head, r)
+            case _ => {
+              stack = r::stack
+              focus = 0::focus
+              lengths = 1::lengths
+            }
+          }
+          cur = loc
+          stepIn(id,name,loc)
         }
-        case _ => ()
+        case _ => {
+          stack match {
+            case h::t => stack = h::stack
+            case _ => stack = Nil
+          }
+          None
+        }
       }
-      stack = r::stack
-      focus = 0::focus
-      stepIn(id,name,loc)
     }
   }
 
@@ -215,11 +253,13 @@ class RuleBuilder extends Listener {
       case GrammarRule(_)::t => {
         cur = cur.outer
         focus = focus.tail
+        lengths = lengths.tail
         focus = (focus.head+1)::(focus.tail)
         stack = t
       }
       case _::t => {
         focus = focus.tail
+        lengths = lengths.tail
         focus = (focus.head+1)::(focus.tail)
         stack = t
       }
@@ -239,11 +279,12 @@ class StepByStepController(control: DebugControl) extends Listener {
   private[this] var stack: List[ParsingNode] = Nil
   private[this] var cur : ParserLocation = null
   
-  private[this] def pause = {
-    control.notification = Some(new Notification)
-    control.notification
-  }
-  def stepIn(id: Int, name: String, loc: ParserLocation) =  if (active) {
+  private[this] def pause: Option[Notification] = if (active) {
+    control.notification = Some(new Notification);
+    control.notification;
+  } else None
+  
+  def stepIn(id: Int, name: String, loc: ParserLocation) = {
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
         stack = new Token(w)(null)::stack
@@ -254,13 +295,9 @@ class StepByStepController(control: DebugControl) extends Listener {
           (stack.head match{
             case a@Alternative(_) => stack = a::stack; None
             case a@Rule(_) => stack = a::stack; None
-            case a@_ => {
-              stack= new Alternative()(null)::stack
-              pause
-            }
+            case a@_ => stack= new Alternative()(null)::stack; pause
           })
         } else {
-          var r = 
           stack = new Rule()(loc.outerMethod, null)::stack
           cur = loc
           pause
@@ -270,9 +307,7 @@ class StepByStepController(control: DebugControl) extends Listener {
         if (Utils.isInSameRule(loc, cur)) {
           (stack.head match{
             case a@Sequence(_) => stack = a::stack; None
-            case a@_ => {
-              stack = new Sequence()(null)::stack; pause
-            }
+            case a@_ => stack = new Sequence()(null)::stack; pause
           })
         }else {
           cur = loc
@@ -281,9 +316,12 @@ class StepByStepController(control: DebugControl) extends Listener {
         }
       }
       case OtherParser(w,_) => None
-      case _ => stack = stack.head::stack; None
+      case _ => stack match {
+        case h::t => stack = h::stack
+        case _ => ()
+      }; None
     }
-  } else None
+  }
   
   def stepOut(id: Int, success: Boolean, msg: String) = stack match {
     case Nil => None
