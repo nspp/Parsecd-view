@@ -67,7 +67,7 @@ object Compiler {
       if (dir.isDirectory) {
         val classPointers = dir.listFiles.filter(f => """.*\.class$""".r.findFirstIn(f.getName).isDefined).toList
         val directories = dir.listFiles.filter(f => f.isDirectory).toList
-        val classStrings = classPointers.map(c => c.getPath.split('.').head.split('/').drop(1).mkString("."))
+        val classStrings = classPointers.map(c => c.getPath.split('.').head.split(System.getProperty("file.separator").charAt(0)).drop(1).mkString("."))
         println((classStrings.filter(_.last=='$').mkString("\n")))
         var cl1 = (for (c <- classStrings if c.last == '$') yield Class.forName(c))
         val classes = cl1.filter(hasRun(_))
