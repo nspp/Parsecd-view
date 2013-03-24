@@ -5,6 +5,8 @@ import java.util.ArrayList
 import javax.swing.JButton
 import javax.swing.tree.DefaultTreeModel
 
+
+
 object Utils {
   def toParserKind(s: String, loc : ParserLocation): ParserKind = {
     def ignore : Boolean = s match {
@@ -16,6 +18,7 @@ object Utils {
     s match {
       case "|" | "|||"                  => OrParser(s, loc)
       case "~" | "~>" | "<~" | "~!"     => AndParser(s, loc)
+      case "rep" | "rep1"				=> RepParser(s, loc)
       case "phrase"                     => OtherParser(s, loc)
       case other if ignore              => IgnoredParser(other, loc)
       case normal                       => WordParser(normal, loc)
@@ -114,6 +117,25 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
           stepIn(id,name,loc)
         }
       }
+      
+      case RepParser(w,_) => {
+        if (Utils.isInSameRule(loc, cur)) {
+        (stack.head match{
+        case a@_ => {
+          var n = new Repetition(w)(model)
+          stack = (a append n)::stack
+          listeners map(_ adding(n, stack.tail.head))
+        }
+      })
+        }else {
+          var r = new Rule()(loc.outerMethod, model)
+          stack = (stack.head append r)::stack
+          listeners map(_ adding(r, stack.head))
+          cur = loc
+          stepIn(id,name,loc)
+        }
+      }
+      
       case OtherParser(w,_) => ()
       case _ => stack = stack.head::stack
     }
@@ -181,6 +203,7 @@ class RuleBuilder extends Listener {
       elem match{
         case e:GrammarAlternative => lengths = 2::lengths;
         case e:GrammarSequence => lengths = 2::lengths;
+        case e:GrammarRepetition => lengths = 2::lengths;
         case _ => lengths = 1::lengths
       }
     }
@@ -208,13 +231,18 @@ class RuleBuilder extends Listener {
           }
           case _ => updateRule(stack.head, focus.head, new GrammarSequence())
         }
+        case RepParser(w,_) => stack.head match {
+         /* case rep@GrammarRepetition(_) => {
+          }*/
+          case _ => updateRule(stack.head, focus.head, new GrammarRepetition(w))
+        }
         case _ => stack = stack.head::stack;
       }
 
       None
     } else {
       Utils.toParserKind(name, loc) match {
-        case WordParser(_,_) | OrParser(_,_) | AndParser(_,_) => {
+        case WordParser(_,_) | OrParser(_,_) | AndParser(_,_) | RepParser(_,_) => {
           var idx = rules.indexOf(GrammarRule(loc.outerMethod))
           var r = GrammarRule(loc.outerMethod)
           if (idx == -1) {
@@ -314,6 +342,10 @@ class StepByStepController(control: DebugControl) extends Listener {
           stack = new Sequence()(null)::stack
           pause
         }
+      }
+      case RepParser(w,_) => {
+          stack = new Repetition(w)(null)::stack
+          pause
       }
       case OtherParser(w,_) => None
       case _ => stack match {

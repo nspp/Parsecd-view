@@ -88,11 +88,15 @@ case class Sequence(uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeMode
   override def toString = "Seq"
 }
 
+case class Repetition(name: String, uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeModel) extends ParsingNode(model) {
+  override def toString = "Rep" + name.substring(3)
+}
+
 case class Token(word: String, uid: Int = ParsingNodeIdGenerator.id)(model: DefaultTreeModel) extends ParsingNode(model) {
   import java.util.Enumeration
 
   override def append(elem: ParsingNode): ParsingNode = this
   override def getAllowsChildren(): Boolean = false
   override def isLeaf(): Boolean = true
-  override def toString = word
+  override def toString = "Tok:"+word
 }

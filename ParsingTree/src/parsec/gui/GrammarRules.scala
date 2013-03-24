@@ -11,6 +11,7 @@ abstract trait GrammarObject {
   var parent: GrammarObject = null
   
   def append(rule: GrammarObject) = {
+    println("appended "+rule+" to "+this)
     elems=elems:+rule
     rule.parent = this
   }
@@ -44,6 +45,7 @@ case class GrammarAlternative extends GrammarObject {
   override def toString = parent match {
     case GrammarSequence() => "("+Printer.print(elems toList, length, " | ")+")"
     case GrammarRule(_) => Printer.print(elems toList, length, " | ")
+    case GrammarRepetition(_) => Printer.print(elems toList, length, " | ")
     case _ => "" // TODO error
   }
 }
@@ -53,6 +55,24 @@ case class GrammarSequence extends GrammarObject {
   override def toString = parent match {
     case GrammarAlternative() => "("+Printer.print(elems toList, length, " ")+")"
     case GrammarRule(_) => Printer.print(elems toList, length, " ")
+    case GrammarRepetition(_) => Printer.print(elems toList, length, " ")
     case _ => "" // TODO error
+  }
+}
+
+case class GrammarRepetition(name: String) extends GrammarObject {
+  var repetedObject: GrammarObject = null
+  var length = 2
+  override def toString = name match{
+    //case GrammarRepetition(_) => name+"("+(repetedObject==null?"UNK":repetedObject)+")"
+    case "rep" => repetedObject match{
+      case insideRep@GrammarRepetition("rep1") => name+"("+insideRep.repetedObject+")"
+      case other@_ => name+"(unexpected "+repetedObject+")" // or failure instead? (not supposed to happen)
+    }
+    case _ => name+"("+repetedObject+")"
+  }
+  override def append(rule: GrammarObject) = {
+    super.append(rule)
+    if (repetedObject == null) repetedObject = rule
   }
 }

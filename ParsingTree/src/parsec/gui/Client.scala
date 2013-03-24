@@ -34,7 +34,7 @@ import scala.swing.Menu
 object Client extends SimpleSwingApplication with Controllers {
   var resourcePath = "resources"
   var debugViews: List[DebugView] = Nil
-  var debuggedParser: DebugableParsers = null
+  var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
   def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
@@ -104,6 +104,7 @@ object Client extends SimpleSwingApplication with Controllers {
   
   def initClient(parser: DebugableParsers) = {
     // TODO Unsubscribe every listener from the ancient parser
+    debugViews map(v => v.clear)
     debugViews map(v => parser.addListener(v.builder))
     
 //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
