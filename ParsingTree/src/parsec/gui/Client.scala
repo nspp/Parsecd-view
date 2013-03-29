@@ -63,16 +63,26 @@ object Client extends SimpleSwingApplication with Controllers {
     toolbar.add(steByStep)
     debugViews = steByStep::debugViews
     var rootSplit = new JSplitPane
-    rootSplit.setDividerLocation(250)
+    rootSplit.setDividerLocation(500)
     content.add(rootSplit)
     
     var parseTreeView = new ParsingTreeView
     var ruleDisplay = new RuleDiscovererView
-    debugViews = ruleDisplay::parseTreeView::debugViews
+    var tokensDisplay = new TokensView
+    debugViews = tokensDisplay::ruleDisplay::parseTreeView::debugViews
+    //debugViews = ruleDisplay::parseTreeView::debugViews
     
     rootSplit.setLeftComponent(parseTreeView)
     rootSplit.setRightComponent(ruleDisplay)
+    
     content.add(toolbar, BorderLayout.NORTH)
+    
+    var secondSplit = new JSplitPane
+    rootSplit.setDividerLocation(200)
+    secondSplit.setLeftComponent(rootSplit)
+    secondSplit.setRightComponent(tokensDisplay)
+    
+    content.add(secondSplit)
     
     debugViews map(v => controller.addControl(v.control))
     
