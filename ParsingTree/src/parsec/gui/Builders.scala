@@ -9,7 +9,7 @@ import javax.swing.tree.DefaultTreeModel
 
 object Utils {
   def toParserKind(s: String, loc : ParserLocation): ParserKind = {
-    println("%%%%%%%%%%%%%%%"+s+" "+loc.outer+" "+loc.offset+" "+loc.line+" "+loc.column+" "+loc.fileName+" "+loc.outerMethod+" "+loc.isValid)
+    //println("%%%%%%%%%%%%%%%"+s+" "+loc.outer+" "+loc.offset+" "+loc.line+" "+loc.column+" "+loc.fileName+" "+loc.outerMethod+" "+loc.isValid)
     def ignore : Boolean = s match {
       case s if(s.indexOf("Parser") >= 0)         => true
       case s if(s.indexOf("parser-map-") >= 0)    => true

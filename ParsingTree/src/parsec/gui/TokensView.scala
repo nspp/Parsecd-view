@@ -10,75 +10,85 @@ import java.awt.BorderLayout
 import javax.swing.tree.TreePath
 import javax.swing.tree.DefaultTreeCellRenderer
 import java.awt.Component
-import parsec.gui.ParsingStatus._
+import parsec.gui.TokenStatus._
 import java.awt.Color
 import javax.swing.ToolTipManager
 import javax.swing.tree.TreeModel
+import javax.swing.JList
+import javax.swing.DefaultListModel
+import javax.swing.ListCellRenderer
+import javax.swing.DefaultListCellRenderer
 
-class TokensView extends JPanel(new BorderLayout) with DebugView with ParsingTreeBuilderListener {
-  val noRootParse = new Rule()("No parsing yet", null)
-  val sentence = new SentencePart(null)
+class TokensView extends JPanel(new BorderLayout) with DebugView with TokenBuilderListener {
   val control = new SwingButtonControl
   def control_=(nControl: DebugControl) = ()
-  var builder: ParsingTreeBuilder = null
-  private var tree: ParsingNode = null
-  private[this] var words: JTree = null
+  var builder: TokenBuilder = null
+  private var words: DefaultListModel = null
+  private[this] var list: JList = null
   var model: DefaultTreeModel = null
+  
+  var currentIndex = -1
   build
 
   private[this] def build = {
-    model = new DefaultTreeModel(sentence)
-    words = new JTree(model)
-    ToolTipManager.sharedInstance().registerComponent(words);
-    words.setCellRenderer(new ParsingRenderer2)
-    builder = new ParsingTreeBuilder(control, model)
+    words = new DefaultListModel
+    list = new JList(words)
+    list.setCellRenderer(new TokenRenderer);
+    ToolTipManager.sharedInstance().registerComponent(list);
+    builder = new TokenBuilder(control, model)
     builder.addListener(this)
     add(new JLabel("Tokens"), BorderLayout.NORTH)
-    add(new JScrollPane(words))
+    add(list)
   }
   
   def clear = {
     removeAll()
-    ToolTipManager.sharedInstance().unregisterComponent(words);
+    ToolTipManager.sharedInstance().unregisterComponent(list);
     build
   }
   
-  def adding(node: ParsingNode, parent: ParsingNode) = {
-    var path: TreePath = parent path;
-    tree.append(node)
-    node match {
-      case t@Token(_,_) => words.addSelectionPath((new TreePath(sentence)).pathByAddingChild(new WordInSentence(t)(model)))
-      case _ => ()
+  def append(token: Tokens) = words.addElement(token)
+  
+  def write(token: Tokens, index: Int){
+    if(index > words.size()) append(token)
+  }
+  
+  def stepForward(name:String): Tokens= {
+    currentIndex+=1
+    var t = new Tokens(name, PARSED)
+    if(currentIndex >= words.size()){
+      append(t)
+    }
+    else{
+      words.setElementAt(t,currentIndex)
+    }
+    t
+  }
+  
+  def stepBack()= {
+    if(currentIndex >= 0){
+      (words.elementAt(currentIndex) match {case tok:Tokens => tok case _ => new Tokens("")}).status = UNKNOWN
+      currentIndex -= 1
     }
   }
 }
 
-class ParsingRenderer2 extends DefaultTreeCellRenderer {
-
-  override def getTreeCellRendererComponent(tree: JTree,
-                    value: Object, sel: Boolean, expanded: Boolean,
-                    leaf: Boolean, row: Int, hasFocus: Boolean): Component = {
-
-        super.getTreeCellRendererComponent(tree, value, sel,expanded, leaf, row,
-                        hasFocus)
-        value match {
-          case node: ParsingNode => {
-            def parentFailed(node: ParsingNode): Boolean = node.parent match {
-              case null => false
-              case p if p.status==FAILURE => true
-              case p if p.status==UNKNOWN => false
-              case p => parentFailed(p)
-            }
-            node.status match {
-              case SUCCESS => if (parentFailed(node)) setForeground(Color.ORANGE) else setForeground(Color.GREEN)
-              case FAILURE => setForeground(Color.RED)
-              case UNKNOWN => 
-            }
-          if (node.reason != null) setToolTipText(node.reason)
-          else setToolTipText(null)
-          }
-          case _ => 
-        }
-        return this;
-    }
+ class TokenRenderer extends DefaultListCellRenderer {
+   override def getListCellRendererComponent(
+       list: JList,
+       value: Object,
+       index: Int,
+       isSelected: Boolean,
+       cellHasFocus: Boolean): Component = {
+     super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus)
+     value match{
+       case t: Tokens => t.status match{
+         case PARSED => setForeground(Color.GREEN)
+         case PENDING => setForeground(Color.ORANGE)
+         case UNKNOWN => setForeground(Color.BLACK)
+       }
+       case _ =>
+     }
+     return this
+   }
 }

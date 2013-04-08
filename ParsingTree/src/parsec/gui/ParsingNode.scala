@@ -100,20 +100,3 @@ case class Token(word: String, uid: Int = ParsingNodeIdGenerator.id)(model: Defa
   override def isLeaf(): Boolean = true
   override def toString = "Tok:"+word
 }
-
-class SentencePart(model : DefaultTreeModel) extends TreeNode {
-  def children(): java.util.Enumeration[_] = ???
-  def getAllowsChildren(): Boolean = ???
-  def getChildAt(x$1: Int): javax.swing.tree.TreeNode = ???
-  def getChildCount(): Int = ???
-  def getIndex(x$1: javax.swing.tree.TreeNode): Int = ???
-  def getParent(): javax.swing.tree.TreeNode = ???
-  def isLeaf(): Boolean = false
-}
-
-class WordInSentence(token : Token)(model : DefaultTreeModel) extends SentencePart(model) {
-  override def getAllowsChildren(): Boolean = false
-  override def isLeaf(): Boolean = true
-  override def toString = token.word
-  def status() = token.status
-}
