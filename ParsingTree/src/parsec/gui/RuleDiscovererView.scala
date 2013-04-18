@@ -35,17 +35,24 @@ class RuleDiscovererView extends JPanel(new BorderLayout) with RuleBuilderListen
   build
   
   private[this] def build = {
+    treeModel = new DefaultTreeModel(treeRoot)
+    tree.setModel(treeModel)
     builder = new RuleBuilder
     builder.addListener(this)
   }
   
   def clear = {
+    treeRoot = new DefaultMutableTreeNode
+    treeModel.setRoot(treeRoot)
+    rules = Nil
+    builder.clear
+  }
+  
+  def clear2 = {
     treeRoot.removeAllChildren()
     rules = Nil
-    treeModel = new DefaultTreeModel(treeRoot)
-    tree.setModel(treeModel)
     builder.clear
-    build
+    //build
   }
   
   private[this] def getPath(n: GrammarRule): TreePath = (rules.filter(_._1==n).map(n => new TreePath(treeRoot).pathByAddingChild(n._2))).head

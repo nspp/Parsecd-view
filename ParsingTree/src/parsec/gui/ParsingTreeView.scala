@@ -22,10 +22,10 @@ class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with Parsi
   private[this] var tree: JTree = null
   var toolbar = new JToolBar
   toolbar.add(control)
+    var model = new DefaultTreeModel(noRootParse)
   build
 
   private[this] def build = {
-    var model = new DefaultTreeModel(noRootParse)
     tree = new JTree(model)
     ToolTipManager.sharedInstance().registerComponent(tree);
     tree.setCellRenderer(new ParsingRenderer)
@@ -37,6 +37,11 @@ class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with Parsi
   }
   
   def clear = {
+    model.setRoot(new Rule()("No parsing yet", null))
+    builder.clear()
+  }
+  
+  def clear_old = {
     removeAll()
     ToolTipManager.sharedInstance().unregisterComponent(tree);
     build

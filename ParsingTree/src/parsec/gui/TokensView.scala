@@ -42,9 +42,8 @@ class TokensView extends JPanel(new BorderLayout) with DebugView with TokenBuild
   }
   
   def clear = {
-    removeAll()
-    ToolTipManager.sharedInstance().unregisterComponent(list);
-    build
+    words.clear()
+    currentIndex = -1
   }
   
   def append(token: Tokens) = words.addElement(token)

@@ -28,7 +28,7 @@ class TokenBuilder(control: DebugControl, model: DefaultTreeModel) extends Liste
   }
   
   def stepIn(id: Int, name: String, loc: ParserLocation): Option[Notification] = {
-    println("+++++++++++++++++stepIN+ before:"+before+ " cpt:"+currentlyParsingToken+" name:"+name+" rpc:"+recentlyParsedCount+" pc:"+parsedCount)
+    //println("+++++++++++++++++stepIN+ before:"+before+ " cpt:"+currentlyParsingToken+" name:"+name+" rpc:"+recentlyParsedCount+" pc:"+parsedCount)
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
         //if (after.isEmpty) {
@@ -47,7 +47,7 @@ class TokenBuilder(control: DebugControl, model: DefaultTreeModel) extends Liste
   }
   
   def stepOut(id: Int, success: Boolean, msg: String): Option[Notification] = {
-    println("+++++++++++++++++stepOUT+ before:"+before+ " cpt:"+currentlyParsingToken+" sucess:"+success+" rpc:"+recentlyParsedCount+" pc:"+parsedCount)
+    //println("+++++++++++++++++stepOUT+ before:"+before+ " cpt:"+currentlyParsingToken+" sucess:"+success+" rpc:"+recentlyParsedCount+" pc:"+parsedCount)
     if (!currentlyParsingToken.isEmpty){
       var name = currentlyParsingToken.dequeue()
       if(success){
@@ -57,7 +57,7 @@ class TokenBuilder(control: DebugControl, model: DefaultTreeModel) extends Liste
     }
     else{
       if(!success){
-        println("%%%%%stepback of "+parsedCount.head)
+        //println("%%%%%stepback of "+parsedCount.head)
         for (i <- 1 to parsedCount.head) listeners.map(_ stepBack())
       }
       else{

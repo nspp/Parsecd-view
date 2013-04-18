@@ -31,10 +31,11 @@ import javax.swing.JFileChooser
 import javax.swing.JFrame
 import scala.swing.Menu
 
-object Client extends SimpleSwingApplication with Controllers {
+object Client extends SimpleSwingApplication{
   var resourcePath = "resources"
   var debugViews: List[DebugView] = Nil
   var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
+  var firstCompile= true
   def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
@@ -113,9 +114,14 @@ object Client extends SimpleSwingApplication with Controllers {
   }
   
   def initClient(parser: DebugableParsers) = {
+    
     // TODO Unsubscribe every listener from the ancient parser
-    debugViews map(v => v.clear)
-    debugViews map(v => parser.addListener(v.builder))
+    //parser.clearListeners()
+    
+    if(firstCompile){
+      debugViews map(v => parser.addListener(v.builder))
+      firstCompile = false
+    }
     
 //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
 //    val op              = new Thread() {
@@ -128,12 +134,11 @@ object Client extends SimpleSwingApplication with Controllers {
 //    }
 //    op.start()
     
-    val methHandler = parser.getClass().getMethod("runMain", classOf[Controller])
+    val methHandler = parser.getClass().getMethod("runMain")
     val op = new Thread() {
       override def run() {
         try {
-          val controller = new Controller
-          methHandler.invoke(parser, controller)
+          methHandler.invoke(parser)
         }
         catch { case e => e.getCause().printStackTrace(); }
       } 
