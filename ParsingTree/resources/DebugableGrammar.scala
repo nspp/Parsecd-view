@@ -11,9 +11,7 @@ object DebugableGrammar extends DebugableTest {
 
   def main(args: Array[String]) {
     //val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val tokens = new lexical.Scanner("Blip Blop Blap Blap Blap")
-//    val tokens = new lexical.Scanner("succ succ succ of succ zero")
-//    val tokens = new lexical.Scanner("succ succ succ zero")
+    val tokens = new lexical.Scanner("Tip Top Tip Top Mip Blip end")
     val mainParser = phrase(Term)
     mainParser(tokens) match {
       case Success(trees, _) =>
@@ -31,51 +29,44 @@ object DebugableGrammar extends DebugableTest {
 
 trait DebugableTest extends StandardTokenParsers with Controllers with debugging.DebugableParsers {
 
-  def runMain(c : Controller) : Unit = {
-    //registerController(c)
+  def runMain() : Unit = {
     DebugableGrammar.main(Array(""))
   }
 
 
   lexical.delimiters ++= List("(", ")", "{", "}", ",", "*", "+")
-  lexical.reserved   ++= List("true", "false", "succ",
-                              "pred", "iszero", "zero", "of", "Mip", "Mup", "Map", "Blip", "Blop", "Blap", "Blup")
+  lexical.reserved   ++= List("Mip", "Mup", "Map", "Mop", "Tip", "Top", "Blip", "Blop", "Blap", "Blup", "end")
   
   def Term(implicit loc0: debugging.ParserLocation): Parser[Term] = (
-    BoolTerm
-    //rep1("succ") ^^^ True
-    // | SimpleChurchNumTerm
-     | "Blop" ~> "Blop" ~> "Blop" ^^^ True
-     // rep1("Blop") ~ rep("nBlap") ^^^ True
-     | "Blip" ~ ("Blup" | "Blop") ~ "Blap" ~ "Blap" ~ "Blup" ^^^ True
-     | "Blip" ~ bopbop ~ "Blap" ~ "Blap" ~ "Blip" ^^^ True
-    // //| rep("Blip") ~ "Blop" ~ rep("Blap") ~ "Blip" ^^^ False
-    // | "Blip" ~ tjah ~ "Blap" ~ "Blap" ^^^ True
-    // | IsZeroTerm
+	p1 ~ "end" ^^^ True
+	| p2 ~ "end" ^^^ True
+	| p3 ~ "end" ^^^ True
+	| p4 ~ "end" ^^^ True
+	| p5 ~ "end" ^^^ True
+	| p6 ~ "end" ^^^ True
   )
 
-  def bopbop(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
-      "Mip" ^^^ True
-    | "Mup" ^^^ True
-    | "Map" ^^^ True
+  def p1(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      rep("Mip") ^^^ True
   )
-
-  def tjah(implicit loc0: debugging.ParserLocation) : Parser[Term] = "Blop" ~ "Blap" ^^^ False
-
-  def IsZeroTerm(implicit loc0: debugging.ParserLocation): Parser[Term] = (
-    "iszero" ~> SimpleChurchNumTerm ^^ (t => IsZero(t))
-  )
-
-//    | failure("illegal start of simple term"))
   
-  def BoolTerm(implicit loc0: debugging.ParserLocation): Parser[Term] = (
-    "true"   ^^^ True
-    | "false"  ^^^ False
+  def p2(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      rep1("Map","Mop") ^^^ True
   )
-
-  def SimpleChurchNumTerm(implicit loc: debugging.ParserLocation): Parser[Term] = (
-    "zero"   ^^^ Zero
-    | "of" ~> SimpleChurchNumTerm ^^ { case t => Succ(Succ(Succ(t))) }
-    | "succ" ~ SimpleChurchNumTerm ^^ { case "succ" ~ t => Succ(t) }
-  ) 
+  
+  def p3(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      rep1("Mup") ^^^ True
+  )
+  
+  def p4(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      rep1sep("Tip", "Top") ^^^ True
+  )
+  
+  def p5(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      repN(3, "Blip") ^^^ True
+  )
+  
+  def p6(implicit loc0: debugging.ParserLocation) : Parser[Term] = (
+      repsep("Blop", "Blap") ^^^ True
+  )
 }

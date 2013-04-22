@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.parsingTree
 
 import java.util.Collections
 import scala.collection.JavaConversions.SeqWrapper
@@ -27,6 +27,7 @@ sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
   var status = UNKNOWN
   var parent: ParsingNode = null
   var elems:List[ParsingNode] = Nil
+  var hiddens:List[ParsingNode] = Nil
   private[this] var length = 0;
   var reason: String = null
 
@@ -39,11 +40,18 @@ sealed abstract class ParsingNode(model : DefaultTreeModel) extends TreeNode {
   }
 
   def append(elem: ParsingNode): ParsingNode = {
-    elems = elem::elems
-    elem.parent = this
-    model.nodesWereInserted(this, Array[Int](length))
-    length = length +1
-    elem
+    elem match {
+      case h@Hidden(_) =>
+        hiddens = h::hiddens
+        h.parent = this
+        h
+      case _ =>
+        elems = elem::elems
+        elem.parent = this
+        model.nodesWereInserted(this, Array[Int](length))
+        length = length +1
+        elem
+    }
   }
 
   def getParent(): TreeNode = parent
@@ -99,4 +107,8 @@ case class Token(word: String, uid: Int = ParsingNodeIdGenerator.id)(model: Defa
   override def getAllowsChildren(): Boolean = false
   override def isLeaf(): Boolean = true
   override def toString = "Tok:"+word
+}
+
+case class Hidden(model: DefaultTreeModel) extends ParsingNode(model) {
+  override def append(elem: ParsingNode): ParsingNode = parent.append(elem)
 }

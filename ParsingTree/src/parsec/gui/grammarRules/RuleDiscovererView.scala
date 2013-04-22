@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.grammarRules
 
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.JTree
@@ -9,13 +9,14 @@ import java.awt.BorderLayout
 import javax.swing.tree.TreePath
 import javax.swing.tree.DefaultTreeCellRenderer
 import java.awt.Component
-import parsec.gui.ParsingStatus._
 import java.awt.Color
 import javax.swing.ToolTipManager
 import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.DefaultMutableTreeNode
 import java.awt.Dimension
 import javax.swing.JLabel
+import parsec.gui.DebugView
+import parsec.gui.NoControl
 
 // This is a trace feature
 class RuleDiscovererView extends JPanel(new BorderLayout) with RuleBuilderListener with DebugView {

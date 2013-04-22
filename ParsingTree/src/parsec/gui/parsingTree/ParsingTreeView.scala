@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.parsingTree
 
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.JLabel
@@ -10,9 +10,12 @@ import java.awt.BorderLayout
 import javax.swing.tree.TreePath
 import javax.swing.tree.DefaultTreeCellRenderer
 import java.awt.Component
-import parsec.gui.ParsingStatus._
+import parsec.gui.parsingTree.ParsingStatus._
 import java.awt.Color
 import javax.swing.ToolTipManager
+import parsec.gui.DebugView
+import parsec.gui.SwingButtonControl
+import parsec.gui.DebugControl
 
 class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with ParsingTreeBuilderListener {
   val noRootParse = new Rule()("No parsing yet", null)

@@ -1,10 +1,12 @@
-package parsec.gui
+package parsec.gui.tokens
 
 import scala.util.parsing.combinator.debugging._
 import javax.swing.tree.DefaultTreeModel
-import parsec.gui.TokenStatus._
+import parsec.gui.tokens.TokenStatus._
 import scala.collection.mutable.Queue
 import scala.collection.mutable.LinkedList
+import parsec.gui.DebugControl
+import parsec.gui.Utils
 
 trait TokenBuilderListener {
   def stepForward(name: String): Tokens

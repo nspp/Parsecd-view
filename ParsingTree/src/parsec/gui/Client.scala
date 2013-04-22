@@ -30,6 +30,9 @@ import scala.swing.FileChooser
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import scala.swing.Menu
+import parsec.gui.parsingTree.ParsingTreeView
+import parsec.gui.grammarRules.RuleDiscovererView
+import parsec.gui.tokens.TokensView
 
 object Client extends SimpleSwingApplication{
   var resourcePath = "resources"

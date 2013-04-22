@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.tokens
 
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.JLabel
@@ -10,7 +10,6 @@ import java.awt.BorderLayout
 import javax.swing.tree.TreePath
 import javax.swing.tree.DefaultTreeCellRenderer
 import java.awt.Component
-import parsec.gui.TokenStatus._
 import java.awt.Color
 import javax.swing.ToolTipManager
 import javax.swing.tree.TreeModel
@@ -18,6 +17,10 @@ import javax.swing.JList
 import javax.swing.DefaultListModel
 import javax.swing.ListCellRenderer
 import javax.swing.DefaultListCellRenderer
+import parsec.gui.DebugView
+import parsec.gui.SwingButtonControl
+import parsec.gui.DebugControl
+import TokenStatus._
 
 class TokensView extends JPanel(new BorderLayout) with DebugView with TokenBuilderListener {
   val control = new SwingButtonControl

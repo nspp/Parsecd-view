@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.grammarRules
 
 import scala.collection.immutable.Queue
 import javax.swing.JTree

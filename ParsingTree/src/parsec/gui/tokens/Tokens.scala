@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.tokens
 
 import java.util.Collections
 
