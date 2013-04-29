@@ -11,7 +11,7 @@ abstract trait GrammarObject {
   var parent: GrammarObject = null
   
   def append(rule: GrammarObject) = {
-    println("appended "+rule+" to "+this)
+    //println("appended "+rule+" to "+this)
     elems=elems:+rule
     rule.parent = this
   }

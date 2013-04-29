@@ -22,7 +22,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
   private[this] var cur : ParserLocation = null
   private[this] var fst = true
   private[this] var listeners: List[ParsingTreeBuilderListener] = Nil
-  private[this] var inducedParsers: Queue[String] = new Queue[String]
+//  private[this] var inducedParsers: Queue[String] = new Queue[String]
   
   def addListener(prbl: ParsingTreeBuilderListener) = listeners = prbl::listeners
 
@@ -33,10 +33,10 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
     fst = true;
   }
   
-  private def testInducedParser(name: String) = Utils.induceNonUserParser(name) match{
-    case null => ()
-    case s@_ => {println("#### met a parser "+name+", will expect following parser to be "+s);inducedParsers.enqueue(s)}
-  }
+//  private def testInducedParser(name: String) = Utils.induceNonUserParser(name) match{
+//    case null => ()
+//    case s@_ => {println("#### met a parser "+name+", will expect following parser to be "+s);inducedParsers.enqueue(s)}
+//  }
   
   def stepIn(id: Int, name: String, loc: ParserLocation): Option[Notification] = {
     notif = None
@@ -45,11 +45,11 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
       fst = false
       model setRoot head
     }
-    if(inducedParsers.isEmpty)
+//    if(inducedParsers.isEmpty)
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
         notif = Some(new Notification)
-        var n = new Token(w)(model)
+        var n = new Token()(w,model)
         stack = (stack.head append(n))::stack
         listeners.map(_ adding(n, stack.tail.head))
       }
@@ -59,7 +59,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         case a@Alternative(_) => stack = a::stack
         case a@Rule(_) => stack = a::stack
         case a@_ => {
-          var n = new Alternative()(model)
+          var n = new Alternative()(w,model)
           stack = (a append n)::stack
           listeners.map(_ adding(n, stack.tail.head))
         }
@@ -77,7 +77,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         (stack.head match{
         case a@Sequence(_) => stack = a::stack
         case a@_ => {
-          var n = new Sequence()(model)
+          var n = new Sequence()(w,model)
           stack = (a append n)::stack
           listeners map(_ adding(n, stack.tail.head))
         }
@@ -95,12 +95,13 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         if (Utils.isInSameRule(loc, cur)) {
         (stack.head match{
         case a@_ => {
-          var n = new Repetition(w)(model)
+          var n = new Repetition()(w,model)
+          //if(Utils.induceNonUserParser(name)) n.setHideChildren()
           stack = (a append n)::stack
           listeners map(_ adding(n, stack.tail.head))
         }
       })
-      testInducedParser(name)
+//      testInducedParser(name)
         }else {
           var r = new Rule()(loc.outerMethod, model)
           stack = (stack.head append r)::stack
@@ -113,17 +114,17 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
       case OtherParser(w,_) => ()
       case _ => stack = stack.head::stack
     }
-    else{
-      var s = inducedParsers.dequeue()
-      var h = new Hidden(model)
-      stack = (stack.head append h)::stack
-      
-      if(s == name){
-        println("--! parser with name " + name + " not shown (not user defined)")
-      }
-      else
-        println("--! unexepected parser "+ name + ", should be scala-defined parser " + s)
-    }
+//    else{
+//      var s = inducedParsers.dequeue()
+//      var h = new Hidden(model)
+//      stack = (stack.head append h)::stack
+//      
+//      if(s == name){
+//        println("--! parser with name " + name + " not shown (not user defined)")
+//      }
+//      else
+//        println("--! unexepected parser "+ name + ", should be scala-defined parser " + s)
+//    }
     
     
     control.notification = notif

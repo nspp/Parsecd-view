@@ -38,12 +38,12 @@ trait DebugableTest extends StandardTokenParsers with Controllers with debugging
   lexical.reserved   ++= List("Mip", "Mup", "Map", "Mop", "Tip", "Top", "Blip", "Blop", "Blap", "Blup", "end")
   
   def Term(implicit loc0: debugging.ParserLocation): Parser[Term] = (
-    p1 ~ "end" ^^^ True
-    | p2 ~ "end" ^^^ True
-    | p3 ~ "end" ^^^ True
-    | p4 ~ "end" ^^^ True
-    | p5 ~ "end" ^^^ True
-    | p6 ~ "end" ^^^ True
+	p1 ~ "end" ^^^ True
+	| p2 ~ "end" ^^^ True
+	| p3 ~ "end" ^^^ True
+	| p4 ~ "end" ^^^ True
+	| p5 ~ "end" ^^^ True
+	| p6 ~ "end" ^^^ True
   )
 
   def p1(implicit loc0: debugging.ParserLocation) : Parser[Term] = (

@@ -33,6 +33,7 @@ import scala.swing.Menu
 import parsec.gui.parsingTree.ParsingTreeView
 import parsec.gui.grammarRules.RuleDiscovererView
 import parsec.gui.tokens.TokensView
+import parsec.gui.grammar.GrammarView
 
 object Client extends SimpleSwingApplication{
   var resourcePath = "resources"
@@ -40,6 +41,18 @@ object Client extends SimpleSwingApplication{
   var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
   var firstCompile= true
   def top = {
+    /*
+     * Create the different views
+     */
+    var parseTreeView = new ParsingTreeView
+    //var ruleDisplay = new RuleDiscovererView
+    var tokensDisplay = new TokensView
+    var grammarView = new GrammarView
+    debugViews = grammarView::tokensDisplay::parseTreeView::debugViews
+    //debugViews = ruleDisplay::parseTreeView::debugViews
+    /*
+     * 
+     */
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
     java.lang.System.setProperty("parsec.debug", "true")
@@ -54,8 +67,10 @@ object Client extends SimpleSwingApplication{
       def actionPerformed(e: ActionEvent) {
         compileButton.setEnabled(false);
         
+        
         debugViews map(_.clear)
         Client.initClient(Compiler.getMainDebuggable(resourcePath))
+        grammarView.loadGrammar(resourcePath)
 
         compileButton.setEnabled(true);
         debugViews map(_.revalidate())
@@ -70,23 +85,25 @@ object Client extends SimpleSwingApplication{
     rootSplit.setDividerLocation(500)
     content.add(rootSplit)
     
-    var parseTreeView = new ParsingTreeView
-    var ruleDisplay = new RuleDiscovererView
-    var tokensDisplay = new TokensView
-    debugViews = tokensDisplay::ruleDisplay::parseTreeView::debugViews
-    //debugViews = ruleDisplay::parseTreeView::debugViews
-    
+        
+    /*
+     * Organise the views
+     */
     rootSplit.setLeftComponent(parseTreeView)
-    rootSplit.setRightComponent(ruleDisplay)
+    //rootSplit.setRightComponent(ruleDisplay)
+    rootSplit.setRightComponent(tokensDisplay)
     
     content.add(toolbar, BorderLayout.NORTH)
     
     var secondSplit = new JSplitPane
     rootSplit.setDividerLocation(200)
     secondSplit.setLeftComponent(rootSplit)
-    secondSplit.setRightComponent(tokensDisplay)
+    secondSplit.setRightComponent(grammarView)
     
     content.add(secondSplit)
+    /*
+     * 
+     */
     
     debugViews map(v => controller.addControl(v.control))
     
