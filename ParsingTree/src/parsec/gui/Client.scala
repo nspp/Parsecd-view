@@ -69,8 +69,8 @@ object Client extends SimpleSwingApplication{
         
         
         debugViews map(_.clear)
-        Client.initClient(Compiler.getMainDebuggable(resourcePath))
         grammarView.loadGrammar(resourcePath)
+        Client.initClient(Compiler.getMainDebuggable(resourcePath))
 
         compileButton.setEnabled(true);
         debugViews map(_.revalidate())
