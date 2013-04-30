@@ -65,11 +65,11 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with DebugView{
     if (orig.isDirectory) {
       files_     = orig.listFiles.filter(f => """.*\.scala$""".r.findFirstIn(f.getName).isDefined).toList
       fnames    = files_.map(f => f.getName)
-      fpaths    = fnames.map(f => resourcePath + "\\" + f)
+      fpaths    = fnames.map(f => resourcePath + System.getProperty("file.separator") + f)
     } else if (orig.getName().endsWith(".scala")) {
       files_ = orig::Nil
       fnames = files_.map(f => f.getName)
-      fpaths = fnames.map(f => resourcePath + "\\" + f)
+      fpaths = fnames.map(f => resourcePath + System.getProperty("file.separator") + f)
     }
     /*
      * 
