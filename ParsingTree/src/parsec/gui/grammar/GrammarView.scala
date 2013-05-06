@@ -28,9 +28,11 @@ import parsec.gui.parsingTree.ParsingTreeBuilderListener
 import parsec.gui.parsingTree.ParsingNode
 import javax.swing.JTabbedPane
 import java.io.File
+import parsec.gui.parsingTree.ParsingTreeBuilderListener
+import parsec.gui.parsingTree.Rule
 
 
-class GrammarView extends JPanel(new BorderLayout) with Grammar with DebugView{
+class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTreeBuilderListener with DebugView{
    val control = NoControl
    var resourcePath: String = null
    var builder: GrammarNotifier = null
@@ -44,6 +46,15 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with DebugView{
   private[this] def build = {
     builder = new GrammarNotifier
     builder.addGrammar(this)
+  }
+   
+   
+  def parsed(node: ParsingNode, succ: Boolean, msg: String) = {}
+  def adding(node: ParsingNode, parent: ParsingNode) = {
+    node match{
+      case Rule(_) => ()
+      case _ => if(!node.isHidden) highlight(node.getName,node.loc, null)
+    }
   }
    
   

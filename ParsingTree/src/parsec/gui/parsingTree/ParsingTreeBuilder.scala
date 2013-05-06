@@ -16,7 +16,7 @@ trait ParsingTreeBuilderListener {
 
 class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends Listener {
 
-  var head: ParsingNode = new Rule()("main", model)
+  var head: ParsingNode = new Rule()("main", NoParserLocation, model)
   private[this] var stack: List[ParsingNode] = head::Nil
   private[this] var notif: Option[Notification] = None
   private[this] var cur : ParserLocation = null
@@ -27,7 +27,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
   def addListener(prbl: ParsingTreeBuilderListener) = listeners = prbl::listeners
 
   def clear() = {
-    head = new Rule()("main", model)
+    head = new Rule()("main", NoParserLocation , model)
     stack = head::Nil
     notif = None
     fst = true;
@@ -49,7 +49,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
         notif = Some(new Notification)
-        var n = new Token()(w,model)
+        var n = new Token()(w,loc,model)
         stack = (stack.head append(n))::stack
         listeners.map(_ adding(n, stack.tail.head))
       }
@@ -59,13 +59,13 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         case a@Alternative(_) => stack = a::stack
         case a@Rule(_) => stack = a::stack
         case a@_ => {
-          var n = new Alternative()(w,model)
+          var n = new Alternative()(w,loc,model)
           stack = (a append n)::stack
           listeners.map(_ adding(n, stack.tail.head))
         }
       })
         } else {
-          var r = new Rule()(loc.outerMethod, model)
+          var r = new Rule()(loc.outerMethod,NoParserLocation,model)
           stack = (stack.head append r)::stack
           listeners map(_ adding(r, stack.head))
           cur = loc
@@ -77,13 +77,13 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         (stack.head match{
         case a@Sequence(_) => stack = a::stack
         case a@_ => {
-          var n = new Sequence()(w,model)
+          var n = new Sequence()(w,loc,model)
           stack = (a append n)::stack
           listeners map(_ adding(n, stack.tail.head))
         }
       })
         }else {
-          var r = new Rule()(loc.outerMethod, model)
+          var r = new Rule()(loc.outerMethod,NoParserLocation, model)
           stack = (stack.head append r)::stack
           listeners map(_ adding(r, stack.head))
           cur = loc
@@ -95,7 +95,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
         if (Utils.isInSameRule(loc, cur)) {
         (stack.head match{
         case a@_ => {
-          var n = new Repetition()(w,model)
+          var n = new Repetition()(w,loc,model)
           //if(Utils.induceNonUserParser(name)) n.setHideChildren()
           stack = (a append n)::stack
           listeners map(_ adding(n, stack.tail.head))
@@ -103,7 +103,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
       })
 //      testInducedParser(name)
         }else {
-          var r = new Rule()(loc.outerMethod, model)
+          var r = new Rule()(loc.outerMethod,NoParserLocation, model)
           stack = (stack.head append r)::stack
           listeners map(_ adding(r, stack.head))
           cur = loc

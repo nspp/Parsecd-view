@@ -40,7 +40,7 @@ object Client extends SimpleSwingApplication{
   var debugViews: List[DebugView] = Nil
   var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
   var firstCompile= true
-  def top = {
+  
     /*
      * Create the different views
      */
@@ -48,11 +48,14 @@ object Client extends SimpleSwingApplication{
     //var ruleDisplay = new RuleDiscovererView
     var tokensDisplay = new TokensView
     var grammarView = new GrammarView
-    debugViews = grammarView::tokensDisplay::parseTreeView::debugViews
+    debugViews = tokensDisplay::parseTreeView::debugViews
+    //debugViews = grammarView::tokensDisplay::parseTreeView::debugViews
     //debugViews = ruleDisplay::parseTreeView::debugViews
     /*
      * 
      */
+    
+  def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
     java.lang.System.setProperty("parsec.debug", "true")
@@ -140,6 +143,7 @@ object Client extends SimpleSwingApplication{
     
     if(firstCompile){
       debugViews map(v => parser.addListener(v.builder))
+      parseTreeView.builder.addListener(grammarView)
       firstCompile = false
     }
     

@@ -16,9 +16,10 @@ import javax.swing.ToolTipManager
 import parsec.gui.DebugView
 import parsec.gui.SwingButtonControl
 import parsec.gui.DebugControl
+import scala.util.parsing.combinator.debugging.NoParserLocation
 
 class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with ParsingTreeBuilderListener {
-  val noRootParse = new Rule()("No parsing yet", null)
+  val noRootParse = new Rule()("No parsing yet", NoParserLocation, null)
   val control = new SwingButtonControl
   def control_=(nControl: DebugControl) = ()
   var builder: ParsingTreeBuilder = null
@@ -40,7 +41,7 @@ class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with Parsi
   }
   
   def clear = {
-    model.setRoot(new Rule()("No parsing yet", null))
+    model.setRoot(new Rule()("No parsing yet", NoParserLocation, null))
     builder.clear()
   }
   

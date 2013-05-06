@@ -6,6 +6,7 @@ import javax.swing.tree.TreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 import parsec.gui.Utils
+import scala.util.parsing.combinator.debugging.ParserLocation
 
 object ParsingStatus extends Enumeration {
   type ParsingStatus = Value
@@ -23,8 +24,10 @@ object ParsingNodeIdGenerator{
 
 import ParsingStatus._
 
-sealed abstract class ParsingNode(name: String, model : DefaultTreeModel) extends TreeNode {
+sealed abstract class ParsingNode(name: String, location: ParserLocation, model : DefaultTreeModel) extends TreeNode {
 
+  def getName(): String = name
+  var loc = location
   var status = UNKNOWN
   var parent: ParsingNode = null
   var elems:List[ParsingNode] = Nil
@@ -37,6 +40,13 @@ sealed abstract class ParsingNode(name: String, model : DefaultTreeModel) extend
   var isHidden = false
   def setHidden(isHidden: Boolean = true): Unit = this.isHidden = isHidden
   
+  def isInSamePosition(node: ParsingNode): Boolean = {
+    (loc.fileName == node.loc.fileName) &&
+    (loc.line == node.loc.line) &&
+    (loc.column == node.loc.column) &&
+    (loc.offset == node.loc.offset)
+  }
+  
   def parse(newStatus: ParsingStatus, msg: String) = {
     status = newStatus
     status match {
@@ -46,20 +56,22 @@ sealed abstract class ParsingNode(name: String, model : DefaultTreeModel) extend
   }
 
   def append(elem: ParsingNode): ParsingNode = {
-//    if(hideChildren){
-      name match{
-      // rep(p) = rep1(p) | success
-      case "rep" => appendHide(elem)
-      // rep1seq(p,q) = p ~ rep(q ~> p) ^^ {case x~y => x::y}
-      case "rep1sep" => if(elems.isEmpty) appendFirstNonHidden(elem) else appendHide(elem) 
-      // repsep(p,q) = rep1sep(p, q) | success
-      case "repsep" => appendHide(elem)
-      case _ => appendFirstNonHidden(elem)
-      }
-//    }
-//    else{
-//      appendFirstNonHidden(elem)
-//    }
+////    if(hideChildren){
+//      name match{
+//      // rep(p) = rep1(p) | success
+//      case "rep" => appendHide(elem)
+//      // rep1sep(p,q) = p ~ rep(q ~> p) ^^ {case x~y => x::y}
+//      case "rep1sep" => appendHide(elem) 
+//      // repsep(p,q) = rep1sep(p, q) | success
+//      case "repsep" => appendHide(elem)
+//      case _ => appendFirstNonHidden(elem)
+//      }
+////    }
+////    else{
+////      appendFirstNonHidden(elem)
+////    }
+    if(isInSamePosition(elem)) appendHide(elem)
+    else appendFirstNonHidden(elem)
   }
   
   private def appendFirstNonHidden(elem: ParsingNode): ParsingNode = {
@@ -116,23 +128,23 @@ sealed abstract class ParsingNode(name: String, model : DefaultTreeModel) extend
 
 }
 
-case class Rule(uid: Int = ParsingNodeIdGenerator.id)(name: String, model: DefaultTreeModel) extends ParsingNode(name,model) {
+case class Rule(uid: Int = ParsingNodeIdGenerator.id)(name: String, location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location,model) {
   override def toString = name
 }
 
-case class Alternative(uid: Int = ParsingNodeIdGenerator.id)(name: String = "Alt", model: DefaultTreeModel) extends ParsingNode(name,model) {
+case class Alternative(uid: Int = ParsingNodeIdGenerator.id)(name: String = "Alt", location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location,model) {
   override def toString = "Alt"
 }
 
-case class Sequence(uid: Int = ParsingNodeIdGenerator.id)(name: String = "Seq", model: DefaultTreeModel) extends ParsingNode(name,model) {
+case class Sequence(uid: Int = ParsingNodeIdGenerator.id)(name: String = "Seq", location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location,model) {
   override def toString = "Seq"
 }
 
-case class Repetition(uid: Int = ParsingNodeIdGenerator.id)(name: String, model: DefaultTreeModel) extends ParsingNode(name,model) {
+case class Repetition(uid: Int = ParsingNodeIdGenerator.id)(name: String, location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location,model) {
   override def toString = "R" + name.substring(1)
 }
 
-case class Token(uid: Int = ParsingNodeIdGenerator.id)(name: String, model: DefaultTreeModel) extends ParsingNode(name,model) {
+case class Token(uid: Int = ParsingNodeIdGenerator.id)(name: String, location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location,model) {
   import java.util.Enumeration
 
   override def append(elem: ParsingNode): ParsingNode = this
@@ -141,6 +153,6 @@ case class Token(uid: Int = ParsingNodeIdGenerator.id)(name: String, model: Defa
   override def toString = "Tok:"+name
 }
 
-case class Hidden(name: String, model: DefaultTreeModel) extends ParsingNode(name, model) {
+case class Hidden(name: String, location: ParserLocation, model: DefaultTreeModel) extends ParsingNode(name, location, model) {
   override def append(elem: ParsingNode): ParsingNode = parent.append(elem)
 }

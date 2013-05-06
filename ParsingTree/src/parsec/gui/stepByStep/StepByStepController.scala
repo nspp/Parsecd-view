@@ -23,7 +23,7 @@ class StepByStepController(control: DebugControl) extends Listener {
   def stepIn(id: Int, name: String, loc: ParserLocation) = {
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
-        stack = new Token()(w,null)::stack
+        stack = new Token()(w,loc,null)::stack
         pause
       }
       case OrParser(w,_) => {
@@ -31,10 +31,10 @@ class StepByStepController(control: DebugControl) extends Listener {
           (stack.head match{
             case a@Alternative(_) => stack = a::stack; None
             case a@Rule(_) => stack = a::stack; None
-            case a@_ => stack= new Alternative()(w,null)::stack; pause
+            case a@_ => stack= new Alternative()(w,loc,null)::stack; pause
           })
         } else {
-          stack = new Rule()(loc.outerMethod, null)::stack
+          stack = new Rule()(loc.outerMethod,NoParserLocation, null)::stack
           cur = loc
           pause
         }
@@ -43,16 +43,16 @@ class StepByStepController(control: DebugControl) extends Listener {
         if (Utils.isInSameRule(loc, cur)) {
           (stack.head match{
             case a@Sequence(_) => stack = a::stack; None
-            case a@_ => stack = new Sequence()(w,null)::stack; pause
+            case a@_ => stack = new Sequence()(w,loc,null)::stack; pause
           })
         }else {
           cur = loc
-          stack = new Sequence()(w,null)::stack
+          stack = new Sequence()(w,loc,null)::stack
           pause
         }
       }
       case RepParser(w,_) => {
-          stack = new Repetition()(w,null)::stack
+          stack = new Repetition()(w,loc,null)::stack
           pause
       }
       case OtherParser(w,_) => None
