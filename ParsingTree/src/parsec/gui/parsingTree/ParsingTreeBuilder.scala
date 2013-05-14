@@ -7,6 +7,7 @@ import javax.swing.tree.DefaultTreeModel
 import parsec.gui.DebugControl
 import parsec.gui.Utils
 import scala.collection.mutable.Queue
+import parsec.gui.grammar.GrammarView
 
 
 trait ParsingTreeBuilderListener {
@@ -33,6 +34,9 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
     fst = true;
   }
   
+  var grammarView: GrammarView = null
+  def setGrammarView(grammar: GrammarView) = grammarView = grammar
+  def getGrammarView() = grammarView
 //  private def testInducedParser(name: String) = Utils.induceNonUserParser(name) match{
 //    case null => ()
 //    case s@_ => {println("#### met a parser "+name+", will expect following parser to be "+s);inducedParsers.enqueue(s)}

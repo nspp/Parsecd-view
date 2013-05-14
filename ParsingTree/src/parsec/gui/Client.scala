@@ -35,10 +35,19 @@ import parsec.gui.grammarRules.RuleDiscovererView
 import parsec.gui.tokens.TokensView
 import parsec.gui.grammar.GrammarView
 
+
+/*
+ * This is the main client to be launched
+ */
 object Client extends SimpleSwingApplication{
+  // Path to which the scala sources we want to test, default directory is "resourse"
   var resourcePath = "resources"
+    
+  // A list of the different views run and showed by the client
   var debugViews: List[DebugView] = Nil
-  var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
+  
+  // Variable used to track if the views and listeners have to be built
+  // The implementation of this should be changed with a cleaner way to reset the listeners
   var firstCompile= true
   
     /*
@@ -48,13 +57,14 @@ object Client extends SimpleSwingApplication{
     //var ruleDisplay = new RuleDiscovererView
     var tokensDisplay = new TokensView
     var grammarView = new GrammarView
-    debugViews = tokensDisplay::parseTreeView::debugViews
+    debugViews = parseTreeView::debugViews
     //debugViews = grammarView::tokensDisplay::parseTreeView::debugViews
     //debugViews = ruleDisplay::parseTreeView::debugViews
     /*
      * 
      */
-    
+  
+  // This is the function that sets up the gui
   def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
@@ -80,30 +90,31 @@ object Client extends SimpleSwingApplication{
       }
     })
 
+    /*
+     * Organise the views
+     */
+    
     toolbar.add(compileButton)
     var steByStep = new StepByStepControllerView
     toolbar.add(steByStep)
     debugViews = steByStep::debugViews
     var rootSplit = new JSplitPane
-    rootSplit.setDividerLocation(500)
+    rootSplit.setDividerLocation(200)
     content.add(rootSplit)
     
         
-    /*
-     * Organise the views
-     */
     rootSplit.setLeftComponent(parseTreeView)
     //rootSplit.setRightComponent(ruleDisplay)
-    rootSplit.setRightComponent(tokensDisplay)
+    rootSplit.setRightComponent(grammarView)
     
     content.add(toolbar, BorderLayout.NORTH)
     
-    var secondSplit = new JSplitPane
-    rootSplit.setDividerLocation(200)
-    secondSplit.setLeftComponent(rootSplit)
-    secondSplit.setRightComponent(grammarView)
+    //var secondSplit = new JSplitPane
+    //rootSplit.setDividerLocation(200)
+   // secondSplit.setLeftComponent(rootSplit)
+    //secondSplit.setRightComponent(grammarView)
     
-    content.add(secondSplit)
+    //content.add(secondSplit)
     /*
      * 
      */
@@ -144,21 +155,12 @@ object Client extends SimpleSwingApplication{
     if(firstCompile){
       debugViews map(v => parser.addListener(v.builder))
       parseTreeView.builder.addListener(grammarView)
+      parseTreeView.builder.setGrammarView(grammarView)
+      parseTreeView.setGrammarView(grammarView)
       firstCompile = false
     }
     
-//    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val op              = new Thread() {
-//      override def run() {
-//        try {
-//          parser.runDebug(tokens)
-//        }
-//        catch { case e => e.getCause().printStackTrace(); }
-//      } 
-//    }
-//    op.start()
-    
-    val methHandler = parser.getClass().getMethod("runMain")
+    val methHandler = getMethodToRun(parser)
     val op = new Thread() {
       override def run() {
         try {
@@ -168,5 +170,18 @@ object Client extends SimpleSwingApplication{
       } 
     }
     op.start()
+  }
+  
+  def getMethodToRun(parser: DebugableParsers): java.lang.reflect.Method = {
+    val methods = parser.getClass().getMethods()
+    //val parsecdMethods = methods.filter(m => m.getAnnotation(classOf[ParsecDebug]) == null)
+//    for(m <- methods){
+//      println(m.getName()+": "+m.getAnnotations())
+//    }
+    //val methHandler = parsecdMethods.head
+//      for(m <- parser.getClass().getMethods()){
+//        println(m+": "+m.getAnnotations())
+//      }
+    parser.getClass().getMethod("runMain")
   }
 }

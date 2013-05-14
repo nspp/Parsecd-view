@@ -30,6 +30,7 @@ import javax.swing.JTabbedPane
 import java.io.File
 import parsec.gui.parsingTree.ParsingTreeBuilderListener
 import parsec.gui.parsingTree.Rule
+import parsec.gui.parsingTree.ParsingNode
 
 
 class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTreeBuilderListener with DebugView{
@@ -115,9 +116,12 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTree
   
   def highlight(name: String, loc: ParserLocation, status: ParsingStatus): Unit = {
     val g = getGrammarFile(loc.fileName)
-    panel setSelectedIndex(g indexInGrammar)
-    g highlight(name,loc,status)
+    if(g != null) {
+      panel setSelectedIndex(g indexInGrammar)
+      g highlight(name,loc,status)
+    }
   }
   
+  def highlight(node: ParsingNode): Unit = highlight(node.getName(),node.loc, UNKNOWN)
   
 }

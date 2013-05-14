@@ -5,6 +5,9 @@ import scala.tools.nsc.reporters.ConsoleReporter
 import scala.reflect.io.{PlainDirectory, Directory, PlainFile}
 import java.io._
 import scala.util.parsing.combinator.debugging.DebugableParsers
+import scala.annotation.ClassfileAnnotation
+
+class ParsecDebug extends ClassfileAnnotation
 
 object Compiler {
   
@@ -82,6 +85,10 @@ object Compiler {
     def hasRun(c : Class[_]) : Boolean = {
       (c.getDeclaredMethods.filter(m => m.getName == "runMain").length == 1)
     }
+    
+//    def hasAnnotedMethod(c : Class[_]) : Boolean = {
+//      (c.getDeclaredMethods.filter(m => m.getAnnotation(classOf[ParsecDebug]) != null).length == 1)
+//    }
 
     println("searching class with a runMain method")
     val cs = findClass0(new File("build"))

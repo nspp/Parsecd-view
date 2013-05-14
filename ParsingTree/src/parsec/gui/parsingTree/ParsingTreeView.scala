@@ -17,6 +17,11 @@ import parsec.gui.DebugView
 import parsec.gui.SwingButtonControl
 import parsec.gui.DebugControl
 import scala.util.parsing.combinator.debugging.NoParserLocation
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import parsec.gui.grammar.GrammarView
+import javax.swing.event.TreeSelectionListener
+import javax.swing.event.TreeSelectionEvent
 
 class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with ParsingTreeBuilderListener {
   val noRootParse = new Rule()("No parsing yet", NoParserLocation, null)
@@ -27,6 +32,9 @@ class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with Parsi
   var toolbar = new JToolBar
   toolbar.add(control)
     var model = new DefaultTreeModel(noRootParse)
+  
+  var grammarView: GrammarView = null
+  def setGrammarView(grammar: GrammarView) = grammarView = grammar
   build
 
   private[this] def build = {
@@ -38,7 +46,29 @@ class ParsingTreeView extends JPanel(new BorderLayout) with DebugView with Parsi
     add(new JLabel("Parsing Tree"), BorderLayout.NORTH)
     add(new JScrollPane(tree))
     add(toolbar, BorderLayout.SOUTH)
+    
+    tree.addTreeSelectionListener(new TreeSelectionListener() {
+      def valueChanged(e: TreeSelectionEvent){
+        var node = tree.getLastSelectedPathComponent().asInstanceOf[ParsingNode]
+        if (node == null) return
+        grammarView.highlight(node)
+        }
+      })
+//    tree.addMouseListener(new MouseAdapter() {
+//      override def mouseClicked(me: MouseEvent) {
+//        doMouseClicked(me);
+//      }
+//    })
   }
+
+  def doMouseClicked(me: MouseEvent) = {
+    var node = tree.getLastSelectedPathComponent().asInstanceOf[ParsingNode]
+    //var obj = tp.getLastPathComponent().asInstanceOf[ParsingNode]
+    println(node)
+    println(grammarView)
+    if(node != null) grammarView.highlight(node)
+  }
+  
   
   def clear = {
     model.setRoot(new Rule()("No parsing yet", NoParserLocation, null))
