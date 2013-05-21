@@ -6,8 +6,6 @@ import scala.util.parsing.input._
 import scala.util.parsing.combinator.debugging
 import debugging.ParserMacros._  
 
-import baz
-import scala.annotation.ClassfileAnnotation
 
 object DebugableGrammar extends DebugableTest {
 
@@ -29,11 +27,9 @@ object DebugableGrammar extends DebugableTest {
   }
 }
 
-case class foo extends ClassfileAnnotation 
-
 trait DebugableTest extends StandardTokenParsers with debugging.DebugableParsers {
 
-  @baz @foo
+  
   def runMain() : Unit = {
     DebugableGrammar.main(Array(""))
   }

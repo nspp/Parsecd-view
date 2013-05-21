@@ -7,9 +7,9 @@ import java.io._
 import scala.util.parsing.combinator.debugging.DebugableParsers
 import scala.annotation.ClassfileAnnotation
 
-class ParsecDebug extends ClassfileAnnotation
 
 object Compiler {
+  var done = false
   
   def compile(dir: String) : List[String] = {
 
@@ -61,6 +61,7 @@ object Compiler {
 
     // Then compile the files
     doCompile(fpaths, build)
+    done = true
     return fnames
   }
   
@@ -84,6 +85,10 @@ object Compiler {
 
     def hasRun(c : Class[_]) : Boolean = {
       (c.getDeclaredMethods.filter(m => m.getName == "runMain").length == 1)
+    }
+    
+    def hasMethod(c : Class[_], name: String): Boolean = {
+      (c.getDeclaredMethods.filter(m => m.getName == name).length == 1)
     }
     
 //    def hasAnnotedMethod(c : Class[_]) : Boolean = {

@@ -34,6 +34,11 @@ import parsec.gui.parsingTree.ParsingTreeView
 import parsec.gui.grammarRules.RuleDiscovererView
 import parsec.gui.tokens.TokensView
 import parsec.gui.grammar.GrammarView
+import javax.swing.JTextField
+import parsec.gui.compiler.CompilerPanel
+import parsec.gui.launcher.LauncherPanel
+import java.awt.FlowLayout
+import javax.swing.BoxLayout
 
 
 /*
@@ -50,100 +55,42 @@ object Client extends SimpleSwingApplication{
   // The implementation of this should be changed with a cleaner way to reset the listeners
   var firstCompile= true
   
-    /*
-     * Create the different views
-     */
-    var parseTreeView = new ParsingTreeView
-    //var ruleDisplay = new RuleDiscovererView
-    var tokensDisplay = new TokensView
-    var grammarView = new GrammarView
-    debugViews = parseTreeView::debugViews
-    //debugViews = grammarView::tokensDisplay::parseTreeView::debugViews
-    //debugViews = ruleDisplay::parseTreeView::debugViews
-    /*
-     * 
-     */
   
-  // This is the function that sets up the gui
+
+  var parseTreeView = new ParsingTreeView
+  var grammarView = new GrammarView
+  var stepByStep = new StepByStepControllerView
+  var controller = new SwingButtonMetaControl
+    
+  debugViews = stepByStep::parseTreeView::debugViews
+  
   def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
     java.lang.System.setProperty("parsec.debug", "true")
-    var toolbar = new JToolBar()
-    
-    var controller = new SwingButtonMetaControl
-    toolbar.add(controller)
-    
-    var compileButton = new JButton
-    compileButton.setText("Compile")
-    compileButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent) {
-        compileButton.setEnabled(false);
-        
-        
-        debugViews map(_.clear)
-        grammarView.loadGrammar(resourcePath)
-        Client.initClient(Compiler.getMainDebuggable(resourcePath))
 
-        compileButton.setEnabled(true);
-        debugViews map(_.revalidate())
-      }
-    })
-
-    /*
-     * Organise the views
-     */
-    
-    toolbar.add(compileButton)
-    var steByStep = new StepByStepControllerView
-    toolbar.add(steByStep)
-    debugViews = steByStep::debugViews
     var rootSplit = new JSplitPane
-    rootSplit.setDividerLocation(200)
-    content.add(rootSplit)
-    
+    rootSplit.setDividerLocation(250)
         
     rootSplit.setLeftComponent(parseTreeView)
-    //rootSplit.setRightComponent(ruleDisplay)
     rootSplit.setRightComponent(grammarView)
     
-    content.add(toolbar, BorderLayout.NORTH)
+    var tools = new JPanel(new BorderLayout)
+    tools.add(CompilerPanel, BorderLayout.NORTH)
+    tools.add(LauncherPanel)
     
-    //var secondSplit = new JSplitPane
-    //rootSplit.setDividerLocation(200)
-   // secondSplit.setLeftComponent(rootSplit)
-    //secondSplit.setRightComponent(grammarView)
+    content.add(tools, BorderLayout.NORTH)
+    content.add(rootSplit)
     
-    //content.add(secondSplit)
-    /*
-     * 
-     */
     
     debugViews map(v => controller.addControl(v.control))
     
     var menusBar = new MenuBar
-    var menu = new JMenu("File")
-    menusBar.contents.append(Component.wrap(menu))
-    var menuItem = new JMenuItem("Choose grammar location")
-    menu.add(menuItem)
-    menuItem.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent) {
-        var pathChooser = new JFileChooser(resourcePath)
-        pathChooser.setDialogTitle("Selection of the grammar location directory")
-        pathChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
-        pathChooser.setMultiSelectionEnabled(false)
-        
-        var ret = pathChooser.showOpenDialog(null)
-        if (ret==JFileChooser.APPROVE_OPTION)
-          resourcePath = pathChooser.getSelectedFile().getAbsolutePath()
-        println(resourcePath)
-      }
-    })
+ 
     new MainFrame (){
       title = "Combinator Parsing"
       contents = Component.wrap(content)
       size = new java.awt.Dimension(750,600)
-      menuBar = menusBar
     }
   }
   
@@ -160,28 +107,8 @@ object Client extends SimpleSwingApplication{
       firstCompile = false
     }
     
-    val methHandler = getMethodToRun(parser)
-    val op = new Thread() {
-      override def run() {
-        try {
-          methHandler.invoke(parser)
-        }
-        catch { case e => e.getCause().printStackTrace(); }
-      } 
-    }
-    op.start()
-  }
-  
-  def getMethodToRun(parser: DebugableParsers): java.lang.reflect.Method = {
-    val methods = parser.getClass().getMethods()
-    //val parsecdMethods = methods.filter(m => m.getAnnotation(classOf[ParsecDebug]) == null)
-//    for(m <- methods){
-//      println(m.getName()+": "+m.getAnnotations())
-//    }
-    //val methHandler = parsecdMethods.head
-//      for(m <- parser.getClass().getMethods()){
-//        println(m+": "+m.getAnnotations())
-//      }
-    parser.getClass().getMethod("runMain")
+    Launcher.parser = parser
+//    Launcher.setRunFromName("runMain")
+//    Launcher.run
   }
 }
