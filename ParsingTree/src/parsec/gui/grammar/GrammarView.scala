@@ -87,15 +87,15 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTree
      * 
      */
     var ind = 0
-    def createGrammarFile(path: String) = {
-      var file = new GrammarFile(path,ind)
+    def createGrammarFile(name: String) = {
+      var file = new GrammarFile(resourcePath + System.getProperty("file.separator") + name,ind)
       ind = ind +1
       file load
       var pane = new JScrollPane(file)
-      panel.addTab(path, pane)
+      panel.addTab(name, pane)
       files = file::files
     }
-    fpaths map createGrammarFile
+    fnames map createGrammarFile
     
   }
   

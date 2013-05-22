@@ -33,6 +33,10 @@ trait DebugableTest extends StandardTokenParsers with debugging.DebugableParsers
   def runMain() : Unit = {
     DebugableGrammar.main(Array(""))
   }
+  
+  def runMain2() : Unit = {
+    DebugableGrammar.main(Array(""))
+  }
 
 
   lexical.delimiters ++= List("(", ")", "{", "}", ",", "*", "+")

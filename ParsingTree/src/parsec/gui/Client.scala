@@ -97,7 +97,7 @@ object Client extends SimpleSwingApplication{
   def initClient(parser: DebugableParsers) = {
     
     // TODO Unsubscribe every listener from the ancient parser
-    //parser.clearListeners()
+//    parser.clearListeners()
     
     if(firstCompile){
       debugViews map(v => parser.addListener(v.builder))
@@ -107,8 +107,6 @@ object Client extends SimpleSwingApplication{
       firstCompile = false
     }
     
-    Launcher.parser = parser
-//    Launcher.setRunFromName("runMain")
-//    Launcher.run
+//    Launcher.parser = parser
   }
 }

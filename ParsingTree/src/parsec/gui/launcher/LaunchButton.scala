@@ -8,16 +8,16 @@ import parsec.gui.Compiler
 import parsec.gui.Launcher
 
 object LaunchButton extends JButton("Run") {
+  setEnabled(false)
   addActionListener(new ActionListener {def actionPerformed(e: ActionEvent) = run})
   
   def run = {
-        setEnabled(false);
+        setEnabled(false)
         
-        Launcher.setRunFromName(ToRunPrompt.getText())
+//        Client.initClient(Compiler.getMainDebuggable(Client.resourcePath))
         Launcher.run
 
-        setEnabled(true);
-
+//        setEnabled(true)
   }
 }
 
