@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent
 import parsec.gui.Client
 import parsec.gui.Compiler
 import parsec.gui.launcher.LaunchButton
+import parsec.gui.SkipToEnd
+import parsec.gui.launcher.SkipToEndButton
 
 object CompileButton extends JButton("Compile") {
   addActionListener(new ActionListener {def actionPerformed(e: ActionEvent) = {compile;LoadInViewButton.load}})

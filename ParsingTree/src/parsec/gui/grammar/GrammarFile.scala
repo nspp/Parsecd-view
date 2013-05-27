@@ -6,6 +6,7 @@ import java.io.BufferedReader
 import parsec.gui.parsingTree.ParsingStatus._
 import javax.swing.text.DefaultHighlighter
 import scala.util.parsing.combinator.debugging.ParserLocation
+import java.awt.Color
 
 class GrammarFile(filename: String, index: Int) extends JTextArea {
   val fileName = filename
@@ -19,12 +20,13 @@ class GrammarFile(filename: String, index: Int) extends JTextArea {
     inputFile.close()
   }
 
-  def highlight(name: String, loc: ParserLocation, status: ParsingStatus): Unit = {
-    getHighlighter().removeAllHighlights()
-    var start =getLineStartOffset(loc.line-1)+loc.column-1
+  var lastHighlight: Any = null
+  def highlight(name: String, loc: ParserLocation, status: ParsingStatus) = {
+    if(lastHighlight!=null) getHighlighter().removeHighlight(lastHighlight)
+    var start = getLineStartOffset(loc.line-1)+loc.column-1
     var end = start + name.length()
     if (getText(start,1)== "\"") end += 2
-    getHighlighter().addHighlight(start, end, DefaultHighlighter.DefaultPainter)
     setCaretPosition(start);
+    lastHighlight = getHighlighter().addHighlight(start, end, new DefaultHighlighter.DefaultHighlightPainter(Color.red))
   }
 }

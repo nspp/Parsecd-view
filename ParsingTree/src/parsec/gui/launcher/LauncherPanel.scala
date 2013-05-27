@@ -9,6 +9,6 @@ import parsec.gui.Client
 object LauncherPanel extends JToolBar() {
   add(ToRunPrompt)
   add(LaunchButton)
-  add(Client.controller)    
-  add(Client.stepByStep)
+  add(SkipToEndButton)
+  add(StepByStepCheckBox)
 }

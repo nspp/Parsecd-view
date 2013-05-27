@@ -4,6 +4,8 @@ import scala.util.parsing.combinator.debugging._
 import java.util.ArrayList
 import javax.swing.JButton
 import javax.swing.tree.DefaultTreeModel
+import parsec.gui.launcher.SkipToEndButton
+import parsec.gui.launcher.StepByStepCheckBox
 
 
 
@@ -52,5 +54,37 @@ object Utils {
     // repsep(p,q) = rep1sep(p, q) | success
     case "repsep" => true
     case _ => false
+  }
+  
+  def getNotification(location: ParserLocation): Option[Notification] = {
+    if(! SkipToEndButton.isEnabled()) return None
+    skip find (_.contains(location)) match{
+      case Some(_) => {println("                           skipped "+print(location));None}
+      case None => Some(new Notification)
+    }
+  }
+  
+  def getSmallStepNotification(location: ParserLocation): Option[Notification] = {
+    if(StepByStepCheckBox.isSelected())
+      getNotification(location)
+      else
+        None
+  }
+  
+  // TODO something better to stock the skipped portions of grammar
+  class Skip(file: String, start: Integer, end: Integer){
+    def contains(loc: ParserLocation): Boolean = {
+      println("                                      ssssssssssss "+loc.fileName+" "+file)
+      if(loc.fileName != file) return false
+      val pos = (Client.grammarView.getGrammarFile(file).getLineStartOffset(loc.line-1)+loc.column-1)
+      (pos >= start) && (pos <= end)
+    }
+  }
+  var skip: List[Skip] = Nil
+  def addToSkip(file: String, start: Integer, end: Integer) = {
+    skip = new Skip(file,start,end)::skip
+  }
+  def resetSkipped = {
+    skip = Nil
   }
 }

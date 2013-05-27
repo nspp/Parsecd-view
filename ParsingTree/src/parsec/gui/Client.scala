@@ -51,16 +51,14 @@ object Client extends SimpleSwingApplication{
   // A list of the different views run and showed by the client
   var debugViews: List[DebugView] = Nil
   
-  // Variable used to track if the views and listeners have to be built
-  // The implementation of this should be changed with a cleaner way to reset the listeners
-  var firstCompile= true
-  
-  
 
-  var parseTreeView = new ParsingTreeView
-  var grammarView = new GrammarView
-  var stepByStep = new StepByStepControllerView
-  var controller = new SwingButtonMetaControl
+  val parseTreeView = new ParsingTreeView
+  val grammarView = new GrammarView
+  val stepByStep = new StepByStepControllerView
+  
+    parseTreeView.builder.addListener(grammarView)
+    parseTreeView.builder.setGrammarView(grammarView)
+    parseTreeView.setGrammarView(grammarView)
     
   debugViews = stepByStep::parseTreeView::debugViews
   
@@ -82,10 +80,6 @@ object Client extends SimpleSwingApplication{
     content.add(tools, BorderLayout.NORTH)
     content.add(rootSplit)
     
-    
-    debugViews map(v => controller.addControl(v.control))
-    
-    var menusBar = new MenuBar
  
     new MainFrame (){
       title = "Combinator Parsing"
@@ -95,18 +89,8 @@ object Client extends SimpleSwingApplication{
   }
   
   def initClient(parser: DebugableParsers) = {
+    parser.clearListeners()
     
-    // TODO Unsubscribe every listener from the ancient parser
-//    parser.clearListeners()
-    
-    if(firstCompile){
-      debugViews map(v => parser.addListener(v.builder))
-      parseTreeView.builder.addListener(grammarView)
-      parseTreeView.builder.setGrammarView(grammarView)
-      parseTreeView.setGrammarView(grammarView)
-      firstCompile = false
-    }
-    
-//    Launcher.parser = parser
+    debugViews map(v => parser.addListener(v.builder))
   }
 }

@@ -39,9 +39,10 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTree
    var builder: GrammarNotifier = null
    var files: List[GrammarFile] = Nil
    
-  private[this] var panel = new JTabbedPane()
+  var panel = new JTabbedPane()
   add(new JLabel("Grammar Files"), BorderLayout.NORTH)
   add(panel)
+  add(GrammarTools, BorderLayout.SOUTH)
   build
   
   private[this] def build = {
@@ -99,7 +100,7 @@ class GrammarView extends JPanel(new BorderLayout) with Grammar with ParsingTree
     
   }
   
-  private def getGrammarFile(file: String): GrammarFile = {
+  def getGrammarFile(file: String): GrammarFile = {
     files.find(_.fileName == file) match {
       case Some(f) => f
       case None => {

@@ -44,15 +44,16 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
   
   def stepIn(id: Int, name: String, loc: ParserLocation): Option[Notification] = {
     notif = None
+          notif = Utils.getSmallStepNotification(loc)
     if (fst) {
-      notif = Some(new Notification)
+      notif = Utils.getNotification(loc)
       fst = false
       model setRoot head
     }
 //    if(inducedParsers.isEmpty)
     Utils.toParserKind(name, loc) match {
       case WordParser(w,_) => {
-        notif = Some(new Notification)
+        notif = Utils.getNotification(loc)
         var n = new Token()(w,loc,model)
         stack = (stack.head append(n))::stack
         listeners.map(_ adding(n, stack.tail.head))
@@ -74,6 +75,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
           listeners map(_ adding(r, stack.head))
           cur = loc
           stepIn(id,name,loc)
+          notif = Utils.getSmallStepNotification(loc)
         }
       }
       case AndParser(w,_) => {
@@ -92,6 +94,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
           listeners map(_ adding(r, stack.head))
           cur = loc
           stepIn(id,name,loc)
+          notif = Utils.getSmallStepNotification(loc)
         }
       }
       
@@ -112,6 +115,7 @@ class ParsingTreeBuilder(control: DebugControl, model: DefaultTreeModel) extends
           listeners map(_ adding(r, stack.head))
           cur = loc
           stepIn(id,name,loc)
+          notif = Utils.getSmallStepNotification(loc)
         }
       }
       

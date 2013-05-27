@@ -2,6 +2,7 @@ package parsec.gui
 
 import scala.util.parsing.combinator.debugging.DebugableParsers
 import parsec.gui.launcher.ToRunPrompt
+import parsec.gui.launcher.SkipToEndButton
 
 object Launcher {
   var parser: DebugableParsers = null
@@ -35,6 +36,7 @@ object Launcher {
         catch { case e => e.getCause().printStackTrace(); }
       } 
     }
+    SkipToEndButton.setEnabled(true)
     op.start()
   }
   
