@@ -58,6 +58,13 @@ class SwingButtonMetaControl extends JButton("Step (Global)") with MetaDebugCont
   def clear = controls = Nil
 }
 
+class SkipToEnd extends JButton("Skip to end") {
+  addActionListener(new ActionListener {
+    def actionPerformed(e: ActionEvent) {
+    }
+  })
+}
+
 object NoControl extends DebugControl {
   override def step = ()
 }

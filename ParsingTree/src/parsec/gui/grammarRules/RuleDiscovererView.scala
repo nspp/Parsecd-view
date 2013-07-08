@@ -1,4 +1,4 @@
-package parsec.gui
+package parsec.gui.grammarRules
 
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.JTree
@@ -9,13 +9,14 @@ import java.awt.BorderLayout
 import javax.swing.tree.TreePath
 import javax.swing.tree.DefaultTreeCellRenderer
 import java.awt.Component
-import parsec.gui.ParsingStatus._
 import java.awt.Color
 import javax.swing.ToolTipManager
 import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.DefaultMutableTreeNode
 import java.awt.Dimension
 import javax.swing.JLabel
+import parsec.gui.DebugView
+import parsec.gui.NoControl
 
 // This is a trace feature
 class RuleDiscovererView extends JPanel(new BorderLayout) with RuleBuilderListener with DebugView {
@@ -35,17 +36,24 @@ class RuleDiscovererView extends JPanel(new BorderLayout) with RuleBuilderListen
   build
   
   private[this] def build = {
+    treeModel = new DefaultTreeModel(treeRoot)
+    tree.setModel(treeModel)
     builder = new RuleBuilder
     builder.addListener(this)
   }
   
   def clear = {
+    treeRoot = new DefaultMutableTreeNode
+    treeModel.setRoot(treeRoot)
+    rules = Nil
+    builder.clear
+  }
+  
+  def clear2 = {
     treeRoot.removeAllChildren()
     rules = Nil
-    treeModel = new DefaultTreeModel(treeRoot)
-    tree.setModel(treeModel)
     builder.clear
-    build
+    //build
   }
   
   private[this] def getPath(n: GrammarRule): TreePath = (rules.filter(_._1==n).map(n => new TreePath(treeRoot).pathByAddingChild(n._2))).head

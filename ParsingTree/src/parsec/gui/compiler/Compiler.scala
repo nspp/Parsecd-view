@@ -5,8 +5,12 @@ import scala.tools.nsc.reporters.ConsoleReporter
 import scala.reflect.io.{PlainDirectory, Directory, PlainFile}
 import java.io._
 import scala.util.parsing.combinator.debugging.DebugableParsers
+import scala.annotation.ClassfileAnnotation
+import parsec.gui.launcher.ToRunPrompt
+
 
 object Compiler {
+  var done = false
   
   def compile(dir: String) : List[String] = {
 
@@ -58,6 +62,7 @@ object Compiler {
 
     // Then compile the files
     doCompile(fpaths, build)
+    done = true
     return fnames
   }
   
@@ -80,7 +85,11 @@ object Compiler {
     }
 
     def hasRun(c : Class[_]) : Boolean = {
-      (c.getDeclaredMethods.filter(m => m.getName == "runMain").length == 1)
+      (c.getDeclaredMethods.filter(m => m.getName == ToRunPrompt.getText()).length == 1)
+    }
+    
+    def hasMethod(c : Class[_], name: String): Boolean = {
+      (c.getDeclaredMethods.filter(m => m.getName == name).length == 1)
     }
 
     println("searching class with a runMain method")
@@ -90,27 +99,5 @@ object Compiler {
       case head::_   => head
       case _            => throw new Exception("No runDebug class in uploaded files")
     }
-  }
-
-  def getMainDebuggable(directory: String): DebugableParsers = {
-    val props = new java.util.Properties()
-    props.load(new java.io.FileInputStream("local.properties"))
-    val x = props.getProperty("scala.home")
-
-    val files = compile(directory) // Echoed out to save a bit of time
-    
-    // TODO Handle the case were the compilation threw errors !!!!
-
-    println("Compile was successful")
-
-    // Now find the class containing the main function
-    val classToRun = findClass
-
-    println("Class name: " + classToRun.getName)
-
-    // Invoke the class we found, calling run with a newly created controller
-    val f           = classToRun.getField("MODULE$")
-    f.setAccessible(true)
-    f.get(null).asInstanceOf[DebugableParsers]
   }
 }
