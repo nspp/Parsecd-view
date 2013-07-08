@@ -30,104 +30,67 @@ import scala.swing.FileChooser
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import scala.swing.Menu
+import parsec.gui.parsingTree.ParsingTreeView
+import parsec.gui.grammarRules.RuleDiscovererView
+import parsec.gui.tokens.TokensView
+import parsec.gui.grammar.GrammarView
+import javax.swing.JTextField
+import parsec.gui.compiler.CompilerPanel
+import parsec.gui.launcher.LauncherPanel
+import java.awt.FlowLayout
+import javax.swing.BoxLayout
 
-object Client extends SimpleSwingApplication with Controllers {
+
+/*
+ * This is the main client to be launched
+ */
+object Client extends SimpleSwingApplication{
+  // Path to which the scala sources we want to test, default directory is "resourse"
   var resourcePath = "resources"
+    
+  // A list of the different views run and showed by the client
   var debugViews: List[DebugView] = Nil
-  var debuggedParser: DebugableParsers = null	// @manu: is debuggedParser used anywhere? (does not seem to be)
+  
+
+  val parseTreeView = new ParsingTreeView
+  val grammarView = new GrammarView
+  val stepByStep = new StepByStepControllerView
+  
+    parseTreeView.builder.addListener(grammarView)
+    parseTreeView.builder.setGrammarView(grammarView)
+    parseTreeView.setGrammarView(grammarView)
+    
+  debugViews = stepByStep::parseTreeView::debugViews
+  
   def top = {
     var content: JComponent = new JPanel(new BorderLayout)
     java.lang.System.setProperty("parser.combinators.debug", "true") // enable macro
     java.lang.System.setProperty("parsec.debug", "true")
-    var toolbar = new JToolBar()
-    
-    var controller = new SwingButtonMetaControl
-    toolbar.add(controller)
-    
-    var compileButton = new JButton
-    compileButton.setText("Compile")
-    compileButton.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent) {
-        compileButton.setEnabled(false);
-        
-        debugViews map(_.clear)
-        Client.initClient(Compiler.getMainDebuggable(resourcePath))
 
-        compileButton.setEnabled(true);
-        debugViews map(_.revalidate())
-      }
-    })
-
-    toolbar.add(compileButton)
-    var steByStep = new StepByStepControllerView
-    toolbar.add(steByStep)
-    debugViews = steByStep::debugViews
     var rootSplit = new JSplitPane
     rootSplit.setDividerLocation(250)
+        
+    rootSplit.setLeftComponent(parseTreeView)
+    rootSplit.setRightComponent(grammarView)
+    
+    var tools = new JPanel(new BorderLayout)
+    tools.add(CompilerPanel, BorderLayout.NORTH)
+    tools.add(LauncherPanel)
+    
+    content.add(tools, BorderLayout.NORTH)
     content.add(rootSplit)
     
-    var parseTreeView = new ParsingTreeView
-    var ruleDisplay = new RuleDiscovererView
-    debugViews = ruleDisplay::parseTreeView::debugViews
-    
-    rootSplit.setLeftComponent(parseTreeView)
-    rootSplit.setRightComponent(ruleDisplay)
-    content.add(toolbar, BorderLayout.NORTH)
-    
-    debugViews map(v => controller.addControl(v.control))
-    
-    var menusBar = new MenuBar
-    var menu = new JMenu("File")
-    menusBar.contents.append(Component.wrap(menu))
-    var menuItem = new JMenuItem("Choose grammar location")
-    menu.add(menuItem)
-    menuItem.addActionListener(new ActionListener {
-      def actionPerformed(e: ActionEvent) {
-        var pathChooser = new JFileChooser(resourcePath)
-        pathChooser.setDialogTitle("Selection of the grammar location directory")
-        pathChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
-        pathChooser.setMultiSelectionEnabled(false)
-        
-        var ret = pathChooser.showOpenDialog(null)
-        if (ret==JFileChooser.APPROVE_OPTION)
-          resourcePath = pathChooser.getSelectedFile().getAbsolutePath()
-        println(resourcePath)
-      }
-    })
+ 
     new MainFrame (){
       title = "Combinator Parsing"
       contents = Component.wrap(content)
       size = new java.awt.Dimension(750,600)
-      menuBar = menusBar
     }
   }
   
   def initClient(parser: DebugableParsers) = {
-    // TODO Unsubscribe every listener from the ancient parser
-    debugViews map(v => v.clear)
+    parser.clearListeners()
+    
     debugViews map(v => parser.addListener(v.builder))
-    
-//    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val op              = new Thread() {
-//      override def run() {
-//        try {
-//          parser.runDebug(tokens)
-//        }
-//        catch { case e => e.getCause().printStackTrace(); }
-//      } 
-//    }
-//    op.start()
-    
-    val methHandler = parser.getClass().getMethod("runMain", classOf[Controller])
-    val op = new Thread() {
-      override def run() {
-        try {
-          val controller = new Controller
-          methHandler.invoke(parser, controller)
-        }
-        catch { case e => e.getCause().printStackTrace(); }
-      } 
-    }
-    op.start()
   }
 }

@@ -1,6 +1,6 @@
 package scala.util.parsing.combinator.debugging
 
-sealed abstract class ParserKind
+abstract class ParserKind
 
 sealed abstract class EnterParserKind extends ParserKind
 
